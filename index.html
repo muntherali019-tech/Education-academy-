@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mochi's Learning Academy</title>
+  <style>
+    :root {
+      --ginger: #e8853b;
+      --ginger-dark: #c96a23;
+      --cream: #fff7ee;
+      --ink: #34291f;
+      --shadow: rgba(52, 41, 31, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top, #fff 0%, var(--cream) 60%, #ffe6d2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      padding: 2.5rem 1rem 1rem;
+    }
+
+    .mochi {
+      font-size: 4rem;
+      line-height: 1;
+      display: inline-block;
+      animation: bob 2.4s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    h1 {
+      margin: 0.4rem 0 0.2rem;
+      font-size: 2rem;
+    }
+
+    .tagline {
+      margin: 0;
+      color: var(--ginger-dark);
+      font-weight: 600;
+    }
+
+    main {
+      width: 100%;
+      max-width: 880px;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .stage-card {
+      background: #fff;
+      border: 2px solid transparent;
+      border-radius: 16px;
+      padding: 1.4rem 1.2rem;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 6px 16px var(--shadow);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      font: inherit;
+      color: inherit;
+    }
+
+    .stage-card:hover,
+    .stage-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: var(--ginger);
+      box-shadow: 0 10px 22px var(--shadow);
+      outline: none;
+    }
+
+    .stage-emoji { font-size: 2rem; }
+
+    .stage-title {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0.5rem 0 0.2rem;
+    }
+
+    .stage-desc {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #6b5b4a;
+    }
+
+    #message {
+      text-align: center;
+      margin-top: 1.5rem;
+      min-height: 1.5rem;
+      font-weight: 600;
+      color: var(--ginger-dark);
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: #9b8a78;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="mochi" role="img" aria-label="Mochi the ginger cat">🐱</span>
+    <h1>Mochi's Learning Academy</h1>
+    <p class="tagline">Purr-fect puzzles for every learner</p>
+  </header>
+
+  <main>
+    <h2>Choose your stage to start a 15-question round</h2>
+    <div class="stages" id="stages"></div>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
+
+  <footer>A cat-themed learning game for UK learners 🇬🇧</footer>
+
+  <script>
+    const STAGES = [
+      { id: "ks1", emoji: "🧸", title: "Key Stage 1", desc: "Ages 5–7 · gentle first steps" },
+      { id: "ks2", emoji: "📚", title: "Key Stage 2", desc: "Ages 7–11 · building confidence" },
+      { id: "ks3", emoji: "🔬", title: "Key Stage 3", desc: "Ages 11–14 · deeper challenges" },
+      { id: "he",  emoji: "🎓", title: "Higher Education", desc: "Advanced study & revision" }
+    ];
+
+    const stagesEl = document.getElementById("stages");
+    const messageEl = document.getElementById("message");
+
+    STAGES.forEach((stage) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "stage-card";
+      card.setAttribute("data-stage", stage.id);
+      card.innerHTML =
+        '<span class="stage-emoji" aria-hidden="true">' + stage.emoji + "</span>" +
+        '<span class="stage-title">' + stage.title + "</span>" +
+        '<p class="stage-desc">' + stage.desc + "</p>";
+      card.addEventListener("click", () => selectStage(stage));
+      stagesEl.appendChild(card);
+    });
+
+    function selectStage(stage) {
+      messageEl.textContent = "Mochi is fetching your " + stage.title + " puzzle round… 🐾";
+    }
+  </script>
+</body>
+</html>

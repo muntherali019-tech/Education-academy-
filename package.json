@@ -1,0 +1,22 @@
+{
+  "name": "education-academy",
+  "version": "1.0.0",
+  "description": "A cat-themed learning game for UK learners, hosted by Mochi the ginger cat.",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "start": "node scripts/dev.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "education",
+    "learning",
+    "uk",
+    "homework",
+    "exam-prep"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

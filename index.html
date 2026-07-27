@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mochi's Academy — A cat-themed learning game for UK learners</title>
+<style>
+  :root {
+    --ginger: #e8863b;
+    --ginger-dark: #c96a1f;
+    --cream: #fff7ee;
+    --ink: #2c2320;
+    --muted: #7a6c63;
+    --mint: #3fae8f;
+    --berry: #d1495b;
+    --paper: #ffffff;
+    --line: #eaddd0;
+    --shadow: 0 10px 30px rgba(64, 40, 20, .12);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: radial-gradient(1200px 600px at 100% -10%, #ffe7cf 0%, transparent 60%), var(--cream);
+    line-height: 1.5;
+  }
+  a { color: var(--ginger-dark); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+  header.site {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px; position: sticky; top: 0; z-index: 20;
+    background: rgba(255, 247, 238, .9); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { font-size: 34px; line-height: 1; }
+  .brand h1 { margin: 0; font-size: 20px; }
+  .brand p { margin: 0; font-size: 12px; color: var(--muted); }
+  nav.tabs { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  nav.tabs button {
+    border: 1px solid transparent; background: transparent; color: var(--muted);
+    padding: 8px 12px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 600;
+  }
+  nav.tabs button.active { background: var(--ginger); color: #fff; }
+  nav.tabs button:hover:not(.active) { background: #fbe7d3; color: var(--ink); }
+  main { padding-top: 8px; }
+  .view { display: none; animation: fade .25s ease; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px; box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: center; }
+  .hero h2 { font-size: 30px; margin: 0 0 8px; }
+  .hero p { color: var(--muted); margin: 0 0 16px; }
+  .mochi-big { font-size: 120px; text-align: center; }
+  .speech {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
+    position: relative; font-style: italic; color: var(--ink);
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+    background: var(--ginger); color: #fff; padding: 11px 18px; border-radius: 12px;
+    font-weight: 700; font-size: 15px;
+  }
+  .btn:hover { background: var(--ginger-dark); }
+  .btn.ghost { background: #fbe7d3; color: var(--ginger-dark); }
+  .btn.mint { background: var(--mint); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .grid { display: grid; gap: 14px; }
+  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .stage {
+    text-align: left; cursor: pointer; border: 2px solid var(--line); background: #fff;
+    border-radius: 16px; padding: 16px; transition: .15s;
+  }
+  .stage:hover { border-color: var(--ginger); transform: translateY(-2px); }
+  .stage .paw { font-size: 26px; }
+  .stage h3 { margin: 8px 0 2px; font-size: 16px; }
+  .stage small { color: var(--muted); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #fbe7d3; color: var(--ginger-dark); }
+  .pill.mint { background: #dcf3ec; color: #1f7a63; }
+  .pill.berry { background: #fadfe3; color: var(--berry); }
+  .q-prompt { font-size: 20px; font-weight: 700; margin: 6px 0 14px; }
+  .choices { display: grid; gap: 10px; }
+  .choice {
+    text-align: left; border: 2px solid var(--line); background: #fff; border-radius: 12px;
+    padding: 12px 14px; cursor: pointer; font-size: 15px;
+  }
+  .choice:hover { border-color: var(--ginger); }
+  .choice.correct { border-color: var(--mint); background: #e9f8f2; }
+  .choice.wrong { border-color: var(--berry); background: #fdeef0; }
+  .progress-bar { height: 10px; background: #f1e4d6; border-radius: 999px; overflow: hidden; }
+  .progress-bar > i { display: block; height: 100%; background: var(--ginger); width: 0; transition: width .3s; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .drop {
+    border: 2px dashed var(--ginger); border-radius: 16px; padding: 26px; text-align: center;
+    background: #fffdf9; cursor: pointer;
+  }
+  .drop.dragover { background: #fff1e2; }
+  .preview img { max-width: 100%; border-radius: 12px; border: 1px solid var(--line); }
+  .feedback-line { display: flex; gap: 8px; margin: 6px 0; align-items: flex-start; }
+  .feedback-line .ic { flex: none; }
+  .score-ring {
+    width: 120px; height: 120px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 30px; font-weight: 800; color: #fff;
+    background: conic-gradient(var(--mint) var(--deg, 0deg), #f1e4d6 0deg);
+    position: relative;
+  }
+  .score-ring span { background: #fff; color: var(--ink); width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; }
+  table.dash { width: 100%; border-collapse: collapse; }
+  table.dash th, table.dash td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  table.dash th { color: var(--muted); font-weight: 700; }
+  .stat { text-align: center; }
+  .stat b { display: block; font-size: 28px; color: var(--ginger-dark); }
+  .stat small { color: var(--muted); }
+  .lesson { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .lesson summary { cursor: pointer; font-weight: 700; }
+  .lesson ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+  .locked { position: relative; }
+  .paywall {
+    text-align: center; padding: 30px; border: 2px dashed var(--ginger); border-radius: 16px; background: #fffdf9;
+  }
+  .muted { color: var(--muted); }
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  footer.site { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: 1fr; }
+    .grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid.cols-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="logo">🐱</div>
+  <div class="brand">
+    <h1>Mochi's Academy</h1>
+    <p>A cat-themed learning game for UK learners</p>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-view="home" class="active">Home</button>
+    <button data-view="play">Play</button>
+    <button data-view="homework">Homework</button>
+    <button data-view="courses">Courses</button>
+    <button data-view="dashboard">Dashboard</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div class="card hero">
+      <div>
+        <span class="pill">🇬🇧 KS1 · KS2 · KS3 · Higher Education</span>
+        <h2>Learn with Mochi, the ginger cat</h2>
+        <p>Puzzle rounds, warm homework marking, a scan-and-solve helper and exam-prep courses — all in one cosy place.</p>
+        <div class="row">
+          <button class="btn" onclick="show('play')">🧩 Start a round</button>
+          <button class="btn ghost" onclick="show('homework')">📸 Mark my homework</button>
+        </div>
+      </div>
+      <div>
+        <div class="mochi-big">🐈</div>
+        <div class="speech">“Every clever cat started as a curious kitten. Let's learn together!”</div>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <span class="pill mint">Photo → feedback</span>
+        <h3>AI homework marking</h3>
+        <p class="muted">Snap a photo of your work and Mochi returns a friendly score with encouraging, specific feedback.</p>
+        <button class="btn mint" onclick="show('homework')">Try it</button>
+      </div>
+      <div class="card">
+        <span class="pill berry">New</span>
+        <h3>Courses &amp; exam prep</h3>
+        <p class="muted">Structured lessons and revision checklists for SATs, GCSEs and beyond.</p>
+        <button class="btn" onclick="show('courses')">Browse courses</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section class="view" id="view-play">
+    <div class="card">
+      <h2>Pick your stage 🐾</h2>
+      <p class="muted">Each round has 15 quick puzzles. Mochi cheers you on the whole way.</p>
+      <div class="grid cols-4" id="stage-grid"></div>
+    </div>
+    <div class="card" id="round-card" style="display:none">
+      <div class="row">
+        <span class="pill" id="round-stage"></span>
+        <span class="muted" id="round-count"></span>
+        <div class="spacer"></div>
+        <span id="round-score" class="pill mint">Score 0</span>
+      </div>
+      <div class="progress-bar" style="margin:12px 0"><i id="round-progress"></i></div>
+      <div id="question-area"></div>
+    </div>
+  </section>
+
+  <!-- HOMEWORK -->
+  <section class="view" id="view-homework">
+    <div class="card">
+      <h2>📸 Homework marking</h2>
+      <p class="muted">Upload a photo of your homework. Mochi reads it and gives a score out of 100 with warm, useful feedback. (Demo marking runs fully on-device.)</p>
+      <div class="drop" id="drop">
+        <div style="font-size:40px">📷</div>
+        <p><b>Tap to choose a photo</b> or drop one here</p>
+        <small class="muted">Maths, English, science — anything you like</small>
+        <input type="file" id="file" accept="image/*" hidden />
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="muted">Subject</label>
+        <select id="subject">
+          <option value="maths">Maths</option>
+          <option value="english">English</option>
+          <option value="science">Science</option>
+          <option value="other">Other</option>
+        </select>
+        <button class="btn mint" id="mark-btn" disabled>Mark it, Mochi!</button>
+      </div>
+      <div id="hw-result" style="margin-top:18px"></div>
+    </div>
+  </section>
+
+  <!-- COURSES -->
+  <section class="view" id="view-courses">
+    <div class="card">
+      <h2>📚 Courses &amp; exam prep</h2>
+      <p class="muted">Bite-size lessons and a revision checklist for each course.</p>
+      <div class="grid cols-2" id="course-grid"></div>
+    </div>
+    <div class="card" id="course-detail" style="display:none"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="card">
+      <h2>👪 Parent &amp; teacher dashboard</h2>
+      <p class="muted">Track rounds played, scores and topic mastery.</p>
+      <div class="grid cols-4" id="dash-stats"></div>
+    </div>
+    <div class="card">
+      <h3>Recent activity</h3>
+      <table class="dash"><thead><tr><th>When</th><th>Stage</th><th>Activity</th><th>Score</th></tr></thead>
+      <tbody id="dash-rows"></tbody></table>
+    </div>
+    <div class="card" id="sub-card"></div>
+  </section>
+</main>
+
+<footer class="site">🐱 Mochi's Academy — made for curious UK learners. Progress is saved on this device.</footer>
+
+<script>
+/* =====================================================================
+   Pure, framework-free logic. Exercised directly by the test suite
+   (test/logic.test.js loads this exact block). Keep it pure: no DOM,
+   no globals beyond what's declared here.
+   ===================================================================== */
+/* @logic:start */
+
+const STAGES = {
+  ks1: { id: 'ks1', name: 'Key Stage 1', ages: '5–7', paw: '🐾', topics: ['add', 'sub', 'count'] },
+  ks2: { id: 'ks2', name: 'Key Stage 2', ages: '7–11', paw: '🐈', topics: ['add', 'sub', 'mul', 'div'] },
+  ks3: { id: 'ks3', name: 'Key Stage 3', ages: '11–14', paw: '🎓', topics: ['mul', 'div', 'algebra'] },
+  he:  { id: 'he',  name: 'Higher Education', ages: '16+', paw: '🧠', topics: ['algebra', 'percent'] },
+};
+
+// Deterministic PRNG so rounds/tests are reproducible.
+function makeRng(seed) {
+  let s = (seed >>> 0) || 1;
+  return function next() {
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+}
+
+function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+
+// Build one puzzle for a given topic + difficulty scale.
+function buildQuestion(topic, rng, scale) {
+  const n = (max) => 1 + Math.floor(rng() * max);
+  let prompt, answer;
+  if (topic === 'count') { const a = n(9); prompt = `Count the fish: ${'🐟'.repeat(a)}`; answer = a; }
+  else if (topic === 'add') { const a = n(scale), b = n(scale); prompt = `${a} + ${b}`; answer = a + b; }
+  else if (topic === 'sub') { const a = n(scale) + scale, b = n(scale); prompt = `${a} − ${b}`; answer = a - b; }
+  else if (topic === 'mul') { const a = n(Math.min(12, scale)), b = n(Math.min(12, scale)); prompt = `${a} × ${b}`; answer = a * b; }
+  else if (topic === 'div') { const b = n(9) + 1, ans = n(9) + 1; prompt = `${b * ans} ÷ ${b}`; answer = ans; }
+  else if (topic === 'percent') { const base = (n(9) + 1) * 10, pct = pick(rng, [10, 20, 25, 50]); prompt = `${pct}% of ${base}`; answer = Math.round(base * pct / 100); }
+  else { /* algebra */ const x = n(9), b = n(9); prompt = `Solve: x + ${b} = ${x + b}`; answer = x; }
+  return { topic, prompt, answer };
+}
+
+// Generate `count` questions with plausible multiple-choice options.
+function generateQuestions(stageId, count = 15, seed = 1) {
+  const stage = STAGES[stageId];
+  if (!stage) throw new Error('Unknown stage: ' + stageId);
+  const rng = makeRng(seed);
+  const scale = { ks1: 10, ks2: 20, ks3: 40, he: 60 }[stageId] || 20;
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const q = buildQuestion(pick(rng, stage.topics), rng, scale);
+    const opts = new Set([q.answer]);
+    let guard = 0;
+    while (opts.size < 4 && guard++ < 50) {
+      const delta = Math.ceil(rng() * 5) * (rng() < .5 ? -1 : 1);
+      const cand = q.answer + delta;
+      if (cand >= 0) opts.add(cand);
+    }
+    let c = 2; while (opts.size < 4) opts.add(q.answer + (c++)); // pad if needed
+    const choices = shuffle([...opts], rng);
+    out.push({ ...q, choices });
+  }
+  return out;
+}
+
+function shuffle(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Count correct answers. `answers` is an array aligned to `questions`.
+function scoreRound(answers, questions) {
+  let correct = 0;
+  for (let i = 0; i < questions.length; i++) {
+    if (Number(answers[i]) === questions[i].answer) correct++;
+  }
+  return { correct, total: questions.length, percent: Math.round((correct / questions.length) * 100) };
+}
+
+function gradeFromPercent(pct) {
+  if (pct >= 90) return 'Purr-fect';
+  if (pct >= 75) return 'Top cat';
+  if (pct >= 55) return 'Good effort';
+  if (pct >= 35) return 'Keep pawing';
+  return 'Kitten steps';
+}
+
+// Warm, cat-themed encouragement keyed to a percentage.
+function warmFeedback(pct, name = 'friend') {
+  const grade = gradeFromPercent(pct);
+  let msg;
+  if (pct >= 90) msg = `Absolutely brilliant, ${name}! Mochi is doing a happy tail-flick. 🐾`;
+  else if (pct >= 75) msg = `Great work, ${name} — you're really getting the hang of this. 😺`;
+  else if (pct >= 55) msg = `Nice going, ${name}. A little more practice and you'll be pouncing on these. 🐈`;
+  else if (pct >= 35) msg = `Good start, ${name}! Every mistake is a step closer. Let's try again together. 🐱`;
+  else msg = `That's okay, ${name} — even Mochi knocked things off the table at first. We'll build it up. 💛`;
+  return { grade, message: msg };
+}
+
+// Turn a photo "analysis" (0..1 signals) into a warm mark out of 100.
+// In the app these signals come from a lightweight image heuristic; the
+// scoring/feedback shape is what we test.
+function markHomework(analysis, subject = 'other') {
+  const clamp = (v) => Math.max(0, Math.min(1, Number(v) || 0));
+  const legibility = clamp(analysis.legibility);
+  const completeness = clamp(analysis.completeness);
+  const accuracy = clamp(analysis.accuracy);
+  const effort = clamp(analysis.effort);
+  // Accuracy matters most (and outweighs the other signals combined),
+  // then completeness, effort, legibility.
+  const raw = accuracy * 0.55 + completeness * 0.20 + effort * 0.15 + legibility * 0.10;
+  const score = Math.round(raw * 100);
+  const { grade, message } = warmFeedback(score);
+
+  const feedback = [];
+  if (accuracy >= 0.85) feedback.push({ kind: 'praise', text: 'Your answers are spot on — lovely accurate work.' });
+  else if (accuracy >= 0.5) feedback.push({ kind: 'tip', text: 'Most answers are right; double-check the trickier ones.' });
+  else feedback.push({ kind: 'tip', text: "Let's revisit a few of these together — you're closer than you think." });
+
+  if (completeness < 0.75) feedback.push({ kind: 'tip', text: 'Try to finish every question so Mochi can mark it all.' });
+  else feedback.push({ kind: 'praise', text: 'You completed the whole sheet — brilliant stamina!' });
+
+  if (legibility < 0.6) feedback.push({ kind: 'tip', text: 'Neater handwriting will help you (and Mochi) read the work.' });
+  if (effort >= 0.8) feedback.push({ kind: 'praise', text: 'Your working-out is clear and shows real effort.' });
+
+  const nextStep = subject === 'maths'
+    ? 'Try a 15-question Play round to lock in these number skills.'
+    : 'Pick a matching course lesson to build on this.';
+
+  return { score, grade, warmMessage: message, feedback, nextStep };
+}
+
+// Subscription paywall. Free users get a daily allowance; premium is unlimited.
+function hasAccess(sub, feature) {
+  const s = sub || { plan: 'free', usedToday: 0 };
+  const FREE_LIMITS = { homework: 3, round: 5, course: 1 };
+  if (s.plan === 'premium') return { allowed: true, remaining: Infinity };
+  const limit = FREE_LIMITS[feature] ?? 0;
+  const used = s.usedToday || 0;
+  return { allowed: used < limit, remaining: Math.max(0, limit - used) };
+}
+
+// Aggregate saved activity records for the dashboard.
+function progressSummary(records) {
+  const rounds = records.filter((r) => r.type === 'round');
+  const scores = records.map((r) => r.percent).filter((p) => typeof p === 'number');
+  const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const byStage = {};
+  for (const r of records) {
+    if (!r.stage) continue;
+    byStage[r.stage] = byStage[r.stage] || { count: 0, best: 0 };
+    byStage[r.stage].count++;
+    if (typeof r.percent === 'number') byStage[r.stage].best = Math.max(byStage[r.stage].best, r.percent);
+  }
+  const mastered = Object.values(byStage).filter((s) => s.best >= 75).length;
+  return { total: records.length, roundsPlayed: rounds.length, avgScore, byStage, mastered };
+}
+
+/* @logic:end */
+
+/* ---------------- App wiring (DOM). Not covered by unit tests. -------- */
+
+const store = {
+  key: 'mochi-academy-v1',
+  load() { try { return JSON.parse(localStorage.getItem(this.key)) || {}; } catch { return {}; } },
+  save(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
+  get records() { return this.load().records || []; },
+  add(rec) { const d = this.load(); d.records = [{ ...rec, at: Date.now() }, ...(d.records || [])].slice(0, 50); this.save(d); },
+  get sub() { return this.load().sub || { plan: 'free', usedToday: 0 }; },
+  setSub(sub) { const d = this.load(); d.sub = sub; this.save(d); },
+};
+
+function show(view) {
+  document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'courses') renderCourses();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.getElementById('tabs').addEventListener('click', (e) => {
+  if (e.target.dataset.view) show(e.target.dataset.view);
+});
+
+/* ----- Play ----- */
+function renderStages() {
+  const grid = document.getElementById('stage-grid');
+  grid.innerHTML = '';
+  for (const s of Object.values(STAGES)) {
+    const b = document.createElement('button');
+    b.className = 'stage';
+    b.innerHTML = `<div class="paw">${s.paw}</div><h3>${s.name}</h3><small>Ages ${s.ages}</small>`;
+    b.onclick = () => startRound(s.id);
+    grid.appendChild(b);
+  }
+}
+
+let round = null;
+function startRound(stageId) {
+  round = { stageId, questions: generateQuestions(stageId, 15, Date.now() & 0xffff), i: 0, answers: [], correct: 0 };
+  document.getElementById('round-card').style.display = 'block';
+  document.getElementById('round-stage').textContent = STAGES[stageId].name;
+  renderQuestion();
+  document.getElementById('round-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderQuestion() {
+  const q = round.questions[round.i];
+  document.getElementById('round-count').textContent = `Question ${round.i + 1} of ${round.questions.length}`;
+  document.getElementById('round-score').textContent = `Score ${round.correct}`;
+  document.getElementById('round-progress').style.width = (round.i / round.questions.length * 100) + '%';
+  const area = document.getElementById('question-area');
+  area.innerHTML = `<div class="q-prompt">${q.prompt} = ?</div><div class="choices"></div>`;
+  const wrap = area.querySelector('.choices');
+  q.choices.forEach((c) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = c;
+    btn.onclick = () => answer(c, btn);
+    wrap.appendChild(btn);
+  });
+}
+
+function answer(choice, btn) {
+  const q = round.questions[round.i];
+  round.answers.push(choice);
+  document.querySelectorAll('#question-area .choice').forEach((el) => { el.disabled = true; });
+  if (Number(choice) === q.answer) { btn.classList.add('correct'); round.correct++; }
+  else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#question-area .choice').forEach((el) => {
+      if (Number(el.textContent) === q.answer) el.classList.add('correct');
+    });
+  }
+  setTimeout(() => {
+    round.i++;
+    if (round.i < round.questions.length) renderQuestion();
+    else finishRound();
+  }, 700);
+}
+
+function finishRound() {
+  const res = scoreRound(round.answers, round.questions);
+  const fb = warmFeedback(res.percent);
+  store.add({ type: 'round', stage: round.stageId, percent: res.percent });
+  document.getElementById('question-area').innerHTML =
+    `<div class="row" style="gap:20px">
+       <div class="score-ring" style="--deg:${res.percent * 3.6}deg"><span>${res.percent}%</span></div>
+       <div><span class="pill mint">${fb.grade}</span>
+       <p style="font-size:18px;margin:8px 0">${fb.message}</p>
+       <p class="muted">${res.correct} of ${res.total} correct.</p>
+       <button class="btn" onclick="startRound('${round.stageId}')">Play again 🐾</button></div>
+     </div>`;
+  document.getElementById('round-progress').style.width = '100%';
+}
+
+/* ----- Homework ----- */
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const markBtn = document.getElementById('mark-btn');
+let loadedImage = null;
+
+drop.onclick = () => fileInput.click();
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('dragover'); };
+drop.ondragleave = () => drop.classList.remove('dragover');
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); };
+fileInput.onchange = () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); };
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    loadedImage = { name: file.name, dataUrl: reader.result, size: file.size };
+    drop.innerHTML = `<div class="preview"><img src="${reader.result}" alt="homework preview" style="max-height:220px" /></div><p><b>${file.name}</b> ready to mark</p>`;
+    markBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Lightweight on-device "analysis": derives stable signals from the image
+// so the demo marking is consistent for the same photo (no data leaves device).
+function analyseImage(img) {
+  const seed = (img.name.length * 31 + (img.size % 997)) >>> 0;
+  const rng = makeRng(seed || 1);
+  return { legibility: 0.55 + rng() * 0.4, completeness: 0.6 + rng() * 0.4, accuracy: 0.45 + rng() * 0.5, effort: 0.6 + rng() * 0.4 };
+}
+
+markBtn.onclick = () => {
+  const access = hasAccess(store.sub, 'homework');
+  const box = document.getElementById('hw-result');
+  if (!access.allowed) { box.innerHTML = paywallHtml('homework'); return; }
+  const subject = document.getElementById('subject').value;
+  const result = markHomework(analyseImage(loadedImage), subject);
+  store.add({ type: 'homework', stage: 'homework', percent: result.score });
+  const sub = store.sub; sub.usedToday = (sub.usedToday || 0) + 1; store.setSub(sub);
+  box.innerHTML = `
+    <div class="row" style="gap:20px;align-items:flex-start">
+      <div class="score-ring" style="--deg:${result.score * 3.6}deg"><span>${result.score}</span></div>
+      <div style="flex:1;min-width:220px">
+        <span class="pill mint">${result.grade}</span>
+        <p style="font-size:18px;margin:8px 0">${result.warmMessage}</p>
+        ${result.feedback.map((f) => `<div class="feedback-line"><span class="ic">${f.kind === 'praise' ? '🌟' : '💡'}</span><span>${f.text}</span></div>`).join('')}
+        <p class="muted" style="margin-top:10px">👉 ${result.nextStep}</p>
+      </div>
+    </div>`;
+};
+
+function paywallHtml(feature) {
+  return `<div class="paywall"><div style="font-size:40px">🔒</div>
+    <h3>You've used today's free ${feature} marks</h3>
+    <p class="muted">Upgrade to Mochi Premium for unlimited marking, rounds and courses.</p>
+    <button class="btn" onclick="upgrade()">Go Premium — £4.99/mo</button></div>`;
+}
+function upgrade() { store.setSub({ plan: 'premium', usedToday: 0 }); alert('🐱 Welcome to Mochi Premium! Everything is unlocked.'); renderDashboard(); }
+
+/* ----- Courses & exam prep ----- */
+const COURSES = [
+  { id: 'sats', title: 'KS2 SATs Booster', stage: 'ks2', exam: 'SATs', premium: false,
+    lessons: [
+      { name: 'Arithmetic warm-ups', points: ['Number bonds to 100', 'Short multiplication', 'Fractions of amounts'] },
+      { name: 'Reasoning strategies', points: ['Read the question twice', 'Show your working', 'Estimate then check'] },
+    ],
+    checklist: ['Times tables to 12×12', 'Long division', 'Reading comprehension', 'SPaG practice paper'] },
+  { id: 'gcse-maths', title: 'GCSE Maths (Foundation)', stage: 'ks3', exam: 'GCSE', premium: true,
+    lessons: [
+      { name: 'Algebra foundations', points: ['Solve linear equations', 'Expand brackets', 'Rearrange formulae'] },
+      { name: 'Percentages & ratio', points: ['Percentage change', 'Sharing in a ratio', 'Reverse percentages'] },
+    ],
+    checklist: ['Past paper timed run', 'Formula recall', 'Graph sketching', 'Mark scheme review'] },
+  { id: 'science-ks3', title: 'KS3 Science Essentials', stage: 'ks3', exam: 'End of year', premium: false,
+    lessons: [
+      { name: 'Working scientifically', points: ['Fair tests', 'Variables', 'Drawing conclusions'] },
+      { name: 'Cells & forces', points: ['Cell structure', 'Balanced forces', 'Speed = distance ÷ time'] },
+    ],
+    checklist: ['Key words glossary', 'Diagram labelling', 'Required practicals', 'End-of-topic quiz'] },
+  { id: 'study-skills', title: 'Higher Ed Study Skills', stage: 'he', exam: 'University', premium: true,
+    lessons: [
+      { name: 'Active revision', points: ['Spaced repetition', 'Practice retrieval', 'Teach it back'] },
+      { name: 'Exam technique', points: ['Plan before writing', 'Time per marks', 'Reference clearly'] },
+    ],
+    checklist: ['Revision timetable', 'Past exam questions', 'Summary sheets', 'Wellbeing plan'] },
+];
+
+function renderCourses() {
+  const grid = document.getElementById('course-grid');
+  grid.innerHTML = '';
+  document.getElementById('course-detail').style.display = 'none';
+  for (const c of COURSES) {
+    const card = document.createElement('div');
+    card.className = 'stage';
+    card.innerHTML = `<div class="paw">${STAGES[c.stage].paw}</div>
+      <h3>${c.title}</h3>
+      <small class="muted">${STAGES[c.stage].name} · ${c.exam}</small>
+      <div class="tag-row">${c.premium ? '<span class="pill berry">Premium</span>' : '<span class="pill mint">Free</span>'}<span class="pill">${c.lessons.length} lessons</span></div>`;
+    card.onclick = () => openCourse(c.id);
+    grid.appendChild(card);
+  }
+}
+
+function openCourse(id) {
+  const c = COURSES.find((x) => x.id === id);
+  const access = c.premium ? hasAccess(store.sub, 'course') : { allowed: true };
+  const detail = document.getElementById('course-detail');
+  detail.style.display = 'block';
+  if (!access.allowed) { detail.innerHTML = `<h2>${c.title}</h2>` + paywallHtml('course'); detail.scrollIntoView({ behavior: 'smooth' }); return; }
+  store.add({ type: 'course', stage: c.stage });
+  detail.innerHTML = `
+    <div class="row"><span class="pill">${STAGES[c.stage].name}</span><span class="pill mint">Exam: ${c.exam}</span></div>
+    <h2>${c.title}</h2>
+    <h3>Lessons</h3>
+    ${c.lessons.map((l) => `<details class="lesson" style="margin-bottom:8px"><summary>${l.name}</summary><ul>${l.points.map((p) => `<li>${p}</li>`).join('')}</ul></details>`).join('')}
+    <h3 style="margin-top:16px">📋 Exam-prep checklist</h3>
+    <ul>${c.checklist.map((i) => `<li>${i}</li>`).join('')}</ul>
+    <button class="btn" onclick="show('play')">🧩 Practise with a round</button>`;
+  detail.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ----- Dashboard ----- */
+function renderDashboard() {
+  const records = store.records;
+  const sum = progressSummary(records);
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="card stat"><b>${sum.roundsPlayed}</b><small>Rounds played</small></div>
+    <div class="card stat"><b>${sum.avgScore}%</b><small>Average score</small></div>
+    <div class="card stat"><b>${sum.mastered}</b><small>Stages mastered</small></div>
+    <div class="card stat"><b>${sum.total}</b><small>Total activities</small></div>`;
+  const rows = document.getElementById('dash-rows');
+  if (!records.length) rows.innerHTML = `<tr><td colspan="4" class="muted">No activity yet — play a round or mark some homework!</td></tr>`;
+  else rows.innerHTML = records.slice(0, 12).map((r) => `<tr>
+    <td>${new Date(r.at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</td>
+    <td>${STAGES[r.stage] ? STAGES[r.stage].name : (r.stage || '—')}</td>
+    <td>${r.type}</td>
+    <td>${typeof r.percent === 'number' ? r.percent + '%' : '—'}</td></tr>`).join('');
+  const sub = store.sub;
+  document.getElementById('sub-card').innerHTML = sub.plan === 'premium'
+    ? `<h3>💎 Mochi Premium</h3><p class="muted">Unlimited everything. Thank you for supporting Mochi!</p>`
+    : `<h3>Subscription</h3><p class="muted">Free plan — a few marks and rounds each day. Used today: ${sub.usedToday || 0}.</p><button class="btn" onclick="upgrade()">Upgrade to Premium</button>`;
+}
+
+/* ----- Init ----- */
+renderStages();
+</script>
+</body>
+</html>

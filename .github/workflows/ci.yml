@@ -17,8 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The floor Vite 8 supports, and current LTS.
-        node-version: ["20.19", "22"]
+        # jsdom 30 requires ^22.22.2 || ^24.15.0 || >=26.0.0 — it bundles
+        # undici 8, which calls worker_threads.markAsUncloneable (Node 22.10+).
+        # Node 20 cannot run the test suite, so 22 is the floor here.
+        node-version: ["22", "24"]
 
     steps:
       - uses: actions/checkout@v4

@@ -6,7 +6,8 @@ A cat-themed learning game for UK learners, hosted by Mochi the ginger cat. Cove
 
 ## Getting started
 
-Requires Node.js 20.19+ (developed on Node 22).
+Requires Node.js 22.22.2+ (developed on Node 22). The floor comes from `jsdom`,
+which the test suite runs in; it is enforced by `engines` in `package.json`.
 
 ```bash
 npm install     # install dependencies

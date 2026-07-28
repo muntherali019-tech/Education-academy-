@@ -123,6 +123,119 @@ button {
   text-align: center;
 }
 
+/* --- Dashboard ---------------------------------------------------------- */
+
+.empty {
+  padding: 1.5rem;
+  border: 2px dashed var(--line);
+  border-radius: 0.75rem;
+  color: #7a6a60;
+  text-align: center;
+}
+
+.tiles {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.tile-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ginger);
+  line-height: 1.1;
+}
+
+.tile-label {
+  font-size: 0.8125rem;
+  color: #7a6a60;
+}
+
+/* Wide tables scroll inside their own box rather than the page. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+th,
+td {
+  padding: 0.6rem 0.75rem;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+thead th {
+  font-size: 0.8125rem;
+  color: #7a6a60;
+  font-weight: 600;
+}
+
+th[scope="row"],
+thead th:first-child {
+  text-align: left;
+}
+
+.recent li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.recent-stage {
+  font-weight: 600;
+}
+
+.recent-score {
+  margin-left: auto;
+}
+
+.recent-date {
+  color: #7a6a60;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.badge.pass {
+  background: #e6f4ea;
+  color: #1e7b34;
+}
+
+.badge.fail {
+  background: #fdeceb;
+  color: #a5342c;
+}
+
+.dashboard h3 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1rem;
+}
+
 .score {
   font-size: 2rem;
   font-weight: 700;

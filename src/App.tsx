@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Dashboard from "./Dashboard";
+import { resultFromRound, type RoundResult } from "./game/progress";
 import {
   answerQuestion,
   createRound,
@@ -9,12 +11,44 @@ import {
   type Round,
 } from "./game/round";
 import { ALL_STAGES, type StageId } from "./game/stages";
+import { browserStore, loadHistory, saveHistory, type HistoryStore } from "./game/storage";
 
-export default function App() {
+interface AppProps {
+  /** Injectable so tests can supply a fake store; defaults to localStorage. */
+  store?: HistoryStore | null;
+  /** Injectable so tests can pin the recorded timestamp. */
+  now?: () => Date;
+}
+
+export default function App({ store, now = () => new Date() }: AppProps = {}) {
+  const resolvedStore = useMemo(
+    () => (store === undefined ? browserStore() : store),
+    [store],
+  );
+  const [history, setHistory] = useState<RoundResult[]>(() => loadHistory(resolvedStore));
   const [round, setRound] = useState<Round | null>(null);
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  function handleAnswer(next: Round) {
+    setRound(next);
+    if (!isComplete(next)) {
+      return;
+    }
+    // Record once, the moment the round finishes. The write stays outside the
+    // state updater so StrictMode's double invocation cannot double-save.
+    const updated = [...history, resultFromRound(next, now().toISOString())];
+    setHistory(updated);
+    saveHistory(resolvedStore, updated);
+  }
 
   function start(stage: StageId) {
+    setShowDashboard(false);
     setRound(createRound(stage));
+  }
+
+  function backToStages() {
+    setRound(null);
+    setShowDashboard(false);
   }
 
   return (
@@ -29,20 +63,27 @@ export default function App() {
         </div>
       </header>
 
-      {round === null ? (
-        <StagePicker onPick={start} />
+      {showDashboard ? (
+        <Dashboard history={history} onBack={backToStages} />
+      ) : round === null ? (
+        <StagePicker onPick={start} onShowDashboard={() => setShowDashboard(true)} />
       ) : (
-        <RoundView round={round} onAnswer={setRound} onQuit={() => setRound(null)} />
+        <RoundView round={round} onAnswer={handleAnswer} onQuit={backToStages} />
       )}
     </main>
   );
 }
 
-function StagePicker({ onPick }: { onPick: (stage: StageId) => void }) {
+interface StagePickerProps {
+  onPick: (stage: StageId) => void;
+  onShowDashboard: () => void;
+}
+
+function StagePicker({ onPick, onShowDashboard }: StagePickerProps) {
   return (
     <section>
       <h2>Pick a stage</h2>
-      <ul className="stages">
+      <ul className="stages" aria-label="Stages">
         {ALL_STAGES.map((stage) => (
           <li key={stage.id}>
             <button type="button" className="stage" onClick={() => onPick(stage.id)}>
@@ -55,6 +96,9 @@ function StagePicker({ onPick }: { onPick: (stage: StageId) => void }) {
           </li>
         ))}
       </ul>
+      <button type="button" className="quit" onClick={onShowDashboard}>
+        View progress
+      </button>
     </section>
   );
 }
@@ -89,7 +133,7 @@ function RoundView({ round, onAnswer, onQuit }: RoundViewProps) {
         Question {round.answers.length + 1} of {round.questions.length} · {question.subject}
       </p>
       <h2 className="prompt">{question.prompt}</h2>
-      <ul className="choices">
+      <ul className="choices" aria-label="Answers">
         {question.choices.map((choice, index) => (
           <li key={choice}>
             <button

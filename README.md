@@ -28,14 +28,16 @@ Other scripts:
 
 ```
 src/
-  game/            Stage, question and round logic (framework-free, fully unit tested)
-    stages.ts      The four UK stages and age-to-stage mapping
-    questions.ts   Question bank, filtered by stage
-    round.ts       Round creation, answering and scoring
-    random.ts      Seeded PRNG + shuffle, so rounds are reproducible
-  test/setup.ts    Vitest setup (jest-dom matchers)
-  App.tsx          Stage picker and round UI
-  main.tsx         React entry point
+  game/                 Stage, question, round and progress logic (framework-free, fully unit tested)
+    stages.ts           The four UK stages and age-to-stage mapping
+    questions.ts        Question bank, filtered by stage
+    round.ts            Round creation, answering and scoring
+    random.ts           Seeded PRNG + shuffle, so rounds are reproducible
+    progress.ts         Round history plus per-stage and per-subject summaries
+    progressStorage.ts  Loads and saves that history, tolerating unreadable data
+  test/setup.ts         Vitest setup (jest-dom matchers)
+  App.tsx               Stage picker, round UI and dashboard
+  main.tsx              React entry point
 ```
 
 The game rules live in `src/game/` with no React imports, so they can be tested
@@ -44,10 +46,25 @@ directly and reused later by the dashboard and marking features.
 ### Current status
 
 Implemented so far: stage selection and 15-question puzzle rounds with seeded,
-reproducible question order and scoring against a 60% pass mark.
+reproducible question order and scoring against a 60% pass mark, plus the
+parent/teacher dashboard described below.
 
-Still to build: AI homework photo-marking, the scan-and-solve helper, the
-subscription paywall, and the parent/teacher dashboard.
+Still to build: AI homework photo-marking, the scan-and-solve helper, and the
+subscription paywall.
+
+### Parent and teacher dashboard
+
+Finishing a round records it against its stage; quitting part way through does
+not count. The dashboard — reachable from the stage picker — shows rounds
+played, rounds passed, best and average scores and the last play date for each
+stage, and rolls the answers up by subject so it is obvious where help is
+needed.
+
+The history is kept in `localStorage` under `education-academy:progress:v1`, so
+it is per-device and per-browser, with no account and nothing sent anywhere. The
+last 200 rounds are kept. A history that cannot be read — blocked storage, data
+from an older build — is treated as a fresh start rather than an error, and
+"Clear saved progress" wipes it on a shared device.
 
 ## Testing
 

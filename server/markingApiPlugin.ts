@@ -4,6 +4,8 @@ import { handleSolveRequest } from "./solveHandler";
 import type { HandlerResponse } from "./photoRequest";
 import type { Marker } from "../src/marking/marking";
 import type { Solver } from "../src/solving/solving";
+import { clientKey } from "./clientKey";
+import { createPhotoLimits, limitsFromEnv, type PhotoLimits } from "./photoLimits";
 
 export const MARKING_API_PATH = "/api/mark";
 export const SOLVING_API_PATH = "/api/solve";
@@ -28,9 +30,17 @@ function readBody(req: Connect.IncomingMessage): Promise<string> {
   });
 }
 
-function send(res: Response, status: number, body: unknown): void {
+function send(
+  res: Response,
+  status: number,
+  body: unknown,
+  headers: Record<string, string> = {},
+): void {
   res.statusCode = status;
   res.setHeader("content-type", "application/json");
+  for (const [name, value] of Object.entries(headers)) {
+    res.setHeader(name, value);
+  }
   res.end(JSON.stringify(body));
 }
 
@@ -38,6 +48,13 @@ export interface MarkingApiOptions {
   /** Injectable so the plugin can be exercised without a real API key. */
   createMarker?: () => Marker;
   createSolver?: () => Solver;
+  /** Shared by both endpoints; defaults come from the environment. */
+  limits?: PhotoLimits;
+  /**
+   * Only enable behind a proxy you control that overwrites `x-forwarded-for` —
+   * otherwise a caller can spoof it and mint a fresh allowance per request.
+   */
+  trustProxy?: boolean;
 }
 
 /**
@@ -49,14 +66,20 @@ export interface MarkingApiOptions {
  * In production these endpoints are whatever you deploy; `handleMarkRequest`
  * and `handleSolveRequest` are the transport-agnostic halves you mount there.
  */
-export function markingApi({ createMarker, createSolver }: MarkingApiOptions = {}): Plugin {
+export function markingApi({
+  createMarker,
+  createSolver,
+  limits,
+  trustProxy,
+}: MarkingApiOptions = {}): Plugin {
   let marker: Marker | null = null;
   let solver: Solver | null = null;
+  const photoLimits = limits ?? createPhotoLimits(limitsFromEnv(process.env));
 
   function endpoint(
     path: string,
     injected: (() => Marker | Solver) | undefined,
-    run: (body: unknown) => Promise<HandlerResponse>,
+    run: (body: unknown, key: string) => Promise<HandlerResponse>,
   ) {
     return async (req: Connect.IncomingMessage, res: Response) => {
       if (req.method !== "POST") {
@@ -84,8 +107,8 @@ export function markingApi({ createMarker, createSolver }: MarkingApiOptions = {
         return;
       }
 
-      const response = await run(body);
-      send(res, response.status, response.body);
+      const response = await run(body, clientKey(req, { trustProxy }));
+      send(res, response.status, response.body, response.headers);
     };
   }
 
@@ -95,18 +118,18 @@ export function markingApi({ createMarker, createSolver }: MarkingApiOptions = {
     configureServer(server) {
       server.middlewares.use(
         MARKING_API_PATH,
-        endpoint(MARKING_API_PATH, createMarker, async (body) => {
+        endpoint(MARKING_API_PATH, createMarker, async (body, key) => {
           // Imported lazily so the SDK is only loaded when the feature is used.
           marker ??= createMarker?.() ?? (await import("./claudeMarker")).createDefaultMarker();
-          return handleMarkRequest(body, marker);
+          return handleMarkRequest(body, marker, { limits: photoLimits.for(key) });
         }),
       );
 
       server.middlewares.use(
         SOLVING_API_PATH,
-        endpoint(SOLVING_API_PATH, createSolver, async (body) => {
+        endpoint(SOLVING_API_PATH, createSolver, async (body, key) => {
           solver ??= createSolver?.() ?? (await import("./claudeSolver")).createDefaultSolver();
-          return handleSolveRequest(body, solver);
+          return handleSolveRequest(body, solver, { limits: photoLimits.for(key) });
         }),
       );
     },

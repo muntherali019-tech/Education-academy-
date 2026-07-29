@@ -124,9 +124,23 @@ Vite dev-server plugin, so `npm run dev` marks and solves for real once
 `ANTHROPIC_API_KEY` is set — copy `.env.example` to `.env.local` to do that.
 Without a key the endpoints answer 501 and the app says the feature is not
 switched on; nothing else is affected, and the test suite never needs a key.
-`server/README.md` has the contract and how to deploy it. There is no rate
-limiting in this build — add it at your deployment boundary before exposing the
-endpoints publicly.
+`server/README.md` has the contract and how to deploy it.
+
+### Rate limiting
+
+Every photo is a paid API call, so both endpoints are limited before any work is
+done — an over-limit request costs a map lookup rather than a model call, and
+comes back as a 429 with a `retry-after`. The defaults are 20 photos per client
+per hour and 120 across the whole deployment, shared between marking and solving
+because they share a budget; both are configurable with
+`PHOTO_RATE_LIMIT_PER_CLIENT` and `PHOTO_RATE_LIMIT_TOTAL`.
+
+The overall limit is the one that genuinely caps spend. Clients are counted by
+address, which is not a strong identity — `x-forwarded-for` is only trusted when
+you opt in, and a caller with many addresses gets an allowance for each. The
+counts are per process and held in memory, so they reset on restart and do not
+add up across instances. `server/README.md` covers what that does and does not
+protect.
 
 ### The free allowance
 

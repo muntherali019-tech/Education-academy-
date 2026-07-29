@@ -21,6 +21,7 @@ Other scripts:
 | Script | What it does |
 | --- | --- |
 | `npm run test:watch` | Re-run tests on change |
+| `npm run test:coverage` | Run tests once with a coverage report |
 | `npm run typecheck` | TypeScript check with no emit |
 | `npm run preview` | Serve the production build locally |
 
@@ -143,5 +144,16 @@ Tests run on [Vitest](https://vitest.dev) with
 sit next to the code they cover as `*.test.ts` / `*.test.tsx`.
 
 ```bash
-npm test
+npm test              # run once
+npm run test:coverage # run once with a coverage report
 ```
+
+Coverage thresholds live in `vite.config.ts` and CI runs `test:coverage`, so a
+drop in coverage fails the build. They are **floors set just under current
+coverage** — raise them as coverage grows rather than lowering them to make a
+change pass.
+
+Nothing in the suite needs an API key. The vision endpoints are served in
+development by the Vite plugin in `server/markingApiPlugin.ts`, which takes
+injectable `createMarker` / `createSolver` factories; the tests pass fakes, so
+the Anthropic SDK is never loaded and no network call is made.

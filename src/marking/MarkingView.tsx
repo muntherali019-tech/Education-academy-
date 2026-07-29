@@ -1,13 +1,13 @@
 import { useState, type ChangeEvent } from "react";
 import { ALL_STAGES, type StageId } from "../game/stages";
+import { learnerMessage } from "../errors";
 import {
-  MarkingError,
   summariseMarking,
   type Marker,
   type MarkedQuestion,
   type MarkingResult,
 } from "./marking";
-import { readPhoto, type HomeworkPhoto } from "./photo";
+import { readPhoto, type HomeworkPhoto } from "../photo/photo";
 
 const VERDICT_ICON: Record<MarkedQuestion["verdict"], string> = {
   correct: "✅",
@@ -22,9 +22,7 @@ const VERDICT_LABEL: Record<MarkedQuestion["verdict"], string> = {
 };
 
 function messageFor(error: unknown): string {
-  return error instanceof MarkingError
-    ? error.message
-    : "Mochi could not mark that photo. Please try again.";
+  return learnerMessage(error, "Mochi could not mark that photo. Please try again.");
 }
 
 export interface MarkingViewProps {

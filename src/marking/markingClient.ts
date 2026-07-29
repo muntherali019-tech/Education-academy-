@@ -1,10 +1,5 @@
-import {
-  MarkingError,
-  parseMarkingResult,
-  type Marker,
-  type MarkingRequest,
-  type MarkingResult,
-} from "./marking";
+import { postPhoto } from "../photo/photoClient";
+import { MarkingError, parseMarkingResult, type Marker } from "./marking";
 
 /**
  * The photo never goes to Anthropic from the browser — it goes to this
@@ -26,46 +21,15 @@ export interface HttpMarkerOptions {
   fetchFn?: typeof fetch;
 }
 
-function messageForStatus(status: number): string {
-  if (status === 413) {
-    return "That photo was too big for Mochi to read. Try a smaller one.";
-  }
-  if (status === 429) {
-    return "Mochi is marking a lot of homework right now. Please try again in a minute.";
-  }
-  if (status === 404 || status === 501) {
-    return "Photo marking is not switched on for this device yet.";
-  }
-  return "Mochi could not mark that photo. Please try again.";
-}
-
 export function createHttpMarker({ endpoint, fetchFn }: HttpMarkerOptions = {}): Marker {
-  return async (request: MarkingRequest): Promise<MarkingResult> => {
-    const send = fetchFn ?? globalThis.fetch;
-    const url = endpoint ?? configuredEndpoint();
-
-    let response: Response;
-    try {
-      response = await send(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(request),
-      });
-    } catch {
-      throw new MarkingError("Mochi could not reach the marking service. Check your connection.");
-    }
-
-    if (!response.ok) {
-      throw new MarkingError(messageForStatus(response.status));
-    }
-
-    let payload: unknown;
-    try {
-      payload = await response.json();
-    } catch {
-      throw new MarkingError("Mochi could not read the marking that came back.");
-    }
-
+  return async (request) => {
+    const payload = await postPhoto({
+      url: endpoint ?? configuredEndpoint(),
+      request,
+      fetchFn,
+      fail: (message) => new MarkingError(message),
+      verb: "mark",
+    });
     const result = parseMarkingResult(payload);
     if (result === null) {
       throw new MarkingError("Mochi could not read the marking that came back.");

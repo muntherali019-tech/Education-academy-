@@ -6,6 +6,7 @@ import App from "./App";
 import { ROUND_SIZE } from "./game/round";
 import { FREE_ROUNDS_PER_DAY } from "./game/subscription";
 import { MarkingError, type Marker, type MarkingResult } from "./marking/marking";
+import { SolveError, type Solution, type Solver } from "./solving/solving";
 
 /** Answers every question in the current round by taking the first choice. */
 async function playWholeRound(user: UserEvent) {
@@ -45,10 +46,20 @@ function photoFile(): File {
   return new File(["homework"], "homework.png", { type: "image/png" });
 }
 
-async function choosePhoto(user: UserEvent) {
-  await user.upload(screen.getByLabelText(/homework photo/i), photoFile());
-  await waitFor(() => expect(screen.getByRole("button", { name: /mark it/i })).toBeEnabled());
+async function choosePhoto(user: UserEvent, label: RegExp, action: RegExp) {
+  await user.upload(screen.getByLabelText(label), photoFile());
+  await waitFor(() => expect(screen.getByRole("button", { name: action })).toBeEnabled());
 }
+
+const SOLUTION: Solution = {
+  problem: "3x + 6 = 21",
+  steps: [
+    { explanation: "Take 6 from both sides.", working: "3x = 15" },
+    { explanation: "Divide both sides by 3.", working: "x = 5" },
+  ],
+  answer: "x = 5",
+  practice: "Try 4x + 8 = 28.",
+};
 
 beforeEach(() => {
   localStorage.clear();
@@ -309,7 +320,7 @@ describe("homework marking", () => {
     await user.click(screen.getByRole("button", { name: /mark my homework/i }));
 
     await user.selectOptions(screen.getByLabelText(/which stage/i), "ks3");
-    await choosePhoto(user);
+    await choosePhoto(user, /homework photo/i, /mark it/i);
     await user.click(screen.getByRole("button", { name: /mark it/i }));
 
     expect(await screen.findByText(MARKING.overall)).toBeInTheDocument();
@@ -325,7 +336,7 @@ describe("homework marking", () => {
     render(<App marker={vi.fn<Marker>().mockResolvedValue(MARKING)} />);
     await subscribe(user);
     await user.click(screen.getByRole("button", { name: /mark my homework/i }));
-    await choosePhoto(user);
+    await choosePhoto(user, /homework photo/i, /mark it/i);
 
     await user.click(screen.getByRole("button", { name: /mark it/i }));
 
@@ -345,7 +356,7 @@ describe("homework marking", () => {
     render(<App marker={marker} />);
     await subscribe(user);
     await user.click(screen.getByRole("button", { name: /mark my homework/i }));
-    await choosePhoto(user);
+    await choosePhoto(user, /homework photo/i, /mark it/i);
 
     await user.click(screen.getByRole("button", { name: /mark it/i }));
 
@@ -376,6 +387,99 @@ describe("homework marking", () => {
     render(<App />);
     await subscribe(user);
     await user.click(screen.getByRole("button", { name: /mark my homework/i }));
+
+    await user.click(screen.getByRole("button", { name: /back to stages/i }));
+
+    expect(screen.getByRole("heading", { name: /pick a stage/i })).toBeInTheDocument();
+  });
+});
+
+describe("scan and solve", () => {
+  it("sends a locked-out learner to the plans view", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
+
+    expect(screen.getByRole("heading", { name: /scan & solve is for subscribers/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/photo of the question/i)).not.toBeInTheDocument();
+  });
+
+  it("opens for a subscriber", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await subscribe(user);
+
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
+
+    expect(screen.getByLabelText(/photo of the question/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /show me how/i })).toBeDisabled();
+  });
+
+  it("reveals the method one step at a time, then the answer", async () => {
+    const user = userEvent.setup();
+    const solver = vi.fn<Solver>().mockResolvedValue(SOLUTION);
+    render(<App solver={solver} />);
+    await subscribe(user);
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
+    await user.selectOptions(screen.getByLabelText(/which stage/i), "ks3");
+    await choosePhoto(user, /photo of the question/i, /show me how/i);
+
+    await user.click(screen.getByRole("button", { name: /show me how/i }));
+
+    // First step only, and no answer yet.
+    expect(await screen.findByText("Take 6 from both sides.")).toBeInTheDocument();
+    expect(screen.queryByText("Divide both sides by 3.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/answer:/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /next step/i }));
+
+    expect(screen.getByText("Divide both sides by 3.")).toBeInTheDocument();
+    expect(screen.getByText(/answer:/i)).toHaveTextContent("x = 5");
+    expect(screen.getByText(/now try this one yourself/i)).toHaveTextContent("4x + 8 = 28");
+    expect(screen.queryByRole("button", { name: /next step/i })).not.toBeInTheDocument();
+    expect(solver).toHaveBeenCalledWith({
+      stage: "ks3",
+      mediaType: "image/png",
+      base64: btoa("homework"),
+    });
+  });
+
+  it("says so when no question could be read in the photo", async () => {
+    const user = userEvent.setup();
+    const solver = vi
+      .fn<Solver>()
+      .mockResolvedValue({ problem: "", steps: [], answer: "", practice: "" });
+    render(<App solver={solver} />);
+    await subscribe(user);
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
+    await choosePhoto(user, /photo of the question/i, /show me how/i);
+
+    await user.click(screen.getByRole("button", { name: /show me how/i }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/could not find a question/i);
+  });
+
+  it("shows a solving failure as a message the learner can act on", async () => {
+    const user = userEvent.setup();
+    const solver = vi
+      .fn<Solver>()
+      .mockRejectedValue(new SolveError("Try a photo of the question by itself."));
+    render(<App solver={solver} />);
+    await subscribe(user);
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
+    await choosePhoto(user, /photo of the question/i, /show me how/i);
+
+    await user.click(screen.getByRole("button", { name: /show me how/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/question by itself/i);
+  });
+
+  it("returns to the stage picker", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await subscribe(user);
+    await user.click(screen.getByRole("button", { name: /scan & solve/i }));
 
     await user.click(screen.getByRole("button", { name: /back to stages/i }));
 

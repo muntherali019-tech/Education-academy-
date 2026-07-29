@@ -1,4 +1,5 @@
-import type { StageId } from "../game/stages";
+import { LearnerError } from "../errors";
+import type { PhotoRequest } from "../photo/photo";
 
 /** How one question came out. `unclear` means the photo could not be read. */
 export type Verdict = "correct" | "incorrect" | "unclear";
@@ -31,21 +32,15 @@ export interface MarkingSummary {
 }
 
 /** What the browser sends to the marking endpoint. */
-export interface MarkingRequest {
-  stage: StageId;
-  mediaType: string;
-  /** The photo, base64 encoded, without a data URL prefix. */
-  base64: string;
-}
+export type MarkingRequest = PhotoRequest;
 
 /** Anything that can mark a photo — the real endpoint, or a fake in tests. */
 export type Marker = (request: MarkingRequest) => Promise<MarkingResult>;
 
-/** A failure a learner should see, rather than a stack trace. */
-export class MarkingError extends Error {
+/** A marking failure a learner should see, rather than a stack trace. */
+export class MarkingError extends LearnerError {
   constructor(message: string) {
-    super(message);
-    this.name = "MarkingError";
+    super(message, "MarkingError");
   }
 }
 

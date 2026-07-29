@@ -1,4 +1,12 @@
-import { MarkingError } from "./marking";
+import { LearnerError } from "../errors";
+import type { StageId } from "../game/stages";
+
+/** A problem with the photo itself, phrased for the learner. */
+export class PhotoError extends LearnerError {
+  constructor(message: string) {
+    super(message, "PhotoError");
+  }
+}
 
 /** Formats the Claude vision API accepts. */
 export const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
@@ -7,6 +15,14 @@ export type PhotoMediaType = (typeof ALLOWED_MEDIA_TYPES)[number];
 
 /** Comfortably inside the API's per-request limit, and kind to phone data. */
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+/** What the browser sends to a vision endpoint: a photo and the stage it is for. */
+export interface PhotoRequest {
+  stage: StageId;
+  mediaType: string;
+  /** The photo, base64 encoded, without a data URL prefix. */
+  base64: string;
+}
 
 export interface HomeworkPhoto {
   mediaType: PhotoMediaType;
@@ -50,22 +66,22 @@ function splitDataUrl(dataUrl: string): string {
 }
 
 /**
- * Read a chosen photo into the form the marking endpoint expects. Rejects with
- * a `MarkingError` the UI can show as-is.
+ * Read a chosen photo into the form the vision endpoints expect. Rejects with
+ * a `PhotoError` the UI can show as-is.
  */
 export function readPhoto(file: File): Promise<HomeworkPhoto> {
   const problem = photoProblem(file);
   if (problem !== null) {
-    return Promise.reject(new MarkingError(problem));
+    return Promise.reject(new PhotoError(problem));
   }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new MarkingError("Mochi could not open that photo."));
+    reader.onerror = () => reject(new PhotoError("Mochi could not open that photo."));
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       const base64 = splitDataUrl(dataUrl);
       if (base64 === "") {
-        reject(new MarkingError("Mochi could not open that photo."));
+        reject(new PhotoError("Mochi could not open that photo."));
         return;
       }
       resolve({

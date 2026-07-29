@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { MarkingError } from "./marking";
 import {
   isAllowedMediaType,
   MAX_PHOTO_BYTES,
+  PhotoError,
   photoProblem,
   readPhoto,
 } from "./photo";
@@ -59,7 +59,7 @@ describe("readPhoto", () => {
   });
 
   it("refuses a photo that fails the checks, without reading it", async () => {
-    await expect(readPhoto(fakeFile("application/pdf"))).rejects.toBeInstanceOf(MarkingError);
+    await expect(readPhoto(fakeFile("application/pdf"))).rejects.toBeInstanceOf(PhotoError);
     await expect(readPhoto(fakeFile("application/pdf"))).rejects.toThrow(/JPEG, PNG/i);
   });
 });

@@ -243,6 +243,78 @@ input[type="file"] {
   color: #8a4b1d;
 }
 
+.solving .primary {
+  margin-top: 1.5rem;
+}
+
+.solving .primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.solving .quit {
+  display: block;
+}
+
+.walkthrough {
+  margin-top: 2rem;
+  border-top: 2px solid var(--line);
+  padding-top: 1rem;
+}
+
+.walkthrough h3 {
+  font-size: 1.125rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.steps {
+  counter-reset: step;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.step {
+  counter-increment: step;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.step::before {
+  content: "Step " counter(step);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ginger);
+  margin-bottom: 0.25rem;
+}
+
+.step-explanation {
+  margin: 0;
+}
+
+.step-working {
+  margin: 0.5rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9375rem;
+  background: var(--cream);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.answer {
+  margin: 1.25rem 0 0;
+  font-size: 1.125rem;
+}
+
+.practice {
+  margin: 0.5rem 0 0;
+  color: #7a6a60;
+}
+
 .marking-result {
   margin-top: 2rem;
   border-top: 2px solid var(--line);

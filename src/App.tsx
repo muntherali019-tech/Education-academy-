@@ -40,20 +40,25 @@ import {
 import { MarkingView } from "./marking/MarkingView";
 import type { Marker } from "./marking/marking";
 import { createHttpMarker } from "./marking/markingClient";
+import { SolveView } from "./solving/SolveView";
+import type { Solver } from "./solving/solving";
+import { createHttpSolver } from "./solving/solvingClient";
 
-type View = "stages" | "dashboard" | "plans" | "marking";
+type View = "stages" | "dashboard" | "plans" | "marking" | "solving";
 
 /** Why the plans view was reached, when it was not opened deliberately. */
-type Lock = "rounds" | "marking" | null;
+type Lock = "rounds" | "marking" | "solving" | null;
 
 const httpMarker = createHttpMarker();
+const httpSolver = createHttpSolver();
 
 export interface AppProps {
-  /** Injectable so tests can mark homework without a marking service. */
+  /** Injectable so tests can use the vision features without a service. */
   marker?: Marker;
+  solver?: Solver;
 }
 
-export default function App({ marker = httpMarker }: AppProps = {}) {
+export default function App({ marker = httpMarker, solver = httpSolver }: AppProps = {}) {
   const [round, setRound] = useState<Round | null>(null);
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
   const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscription());
@@ -109,14 +114,14 @@ export default function App({ marker = httpMarker }: AppProps = {}) {
     setView(next);
   }
 
-  /** Photo marking costs money to run, so it is for subscribers. */
-  function showMarking() {
+  /** The camera features cost money to run, so they are for subscribers. */
+  function showCamera(feature: "marking" | "solving") {
     if (!access.subscribed) {
-      setLockedOut("marking");
+      setLockedOut(feature);
       setView("plans");
       return;
     }
-    show("marking");
+    show(feature);
   }
 
   return (
@@ -150,13 +155,16 @@ export default function App({ marker = httpMarker }: AppProps = {}) {
         />
       ) : view === "marking" ? (
         <MarkingView marker={marker} onBack={() => show("stages")} />
+      ) : view === "solving" ? (
+        <SolveView solver={solver} onBack={() => show("stages")} />
       ) : (
         <StagePicker
           access={access}
           onPick={start}
           onShowDashboard={() => show("dashboard")}
           onShowPlans={() => show("plans")}
-          onShowMarking={showMarking}
+          onShowMarking={() => showCamera("marking")}
+          onShowSolving={() => showCamera("solving")}
         />
       )}
     </main>
@@ -169,6 +177,7 @@ interface StagePickerProps {
   onShowDashboard: () => void;
   onShowPlans: () => void;
   onShowMarking: () => void;
+  onShowSolving: () => void;
 }
 
 function StagePicker({
@@ -177,6 +186,7 @@ function StagePicker({
   onShowDashboard,
   onShowPlans,
   onShowMarking,
+  onShowSolving,
 }: StagePickerProps) {
   return (
     <section>
@@ -202,6 +212,9 @@ function StagePicker({
       </p>
       <button type="button" className="link" onClick={onShowMarking}>
         Mark my homework 📷
+      </button>
+      <button type="button" className="link" onClick={onShowSolving}>
+        Scan &amp; solve 🔍
       </button>
       <button type="button" className="link" onClick={onShowDashboard}>
         Parent &amp; teacher dashboard
@@ -276,9 +289,10 @@ interface PlansViewProps {
   onBack: () => void;
 }
 
-const LOCK_HEADING: Record<"rounds" | "marking", string> = {
+const LOCK_HEADING: Record<"rounds" | "marking" | "solving", string> = {
   rounds: "That's today's free rounds",
   marking: "Photo marking is for subscribers",
+  solving: "Scan & solve is for subscribers",
 };
 
 function lockBlurb(lockedOut: Lock): string {
@@ -288,7 +302,10 @@ function lockBlurb(lockedOut: Lock): string {
   if (lockedOut === "marking") {
     return "Subscribe and Mochi will mark photos of your homework, as well as giving you unlimited rounds.";
   }
-  return `The free tier includes ${FREE_ROUNDS_PER_DAY} rounds a day. Subscribing lifts the limit and unlocks photo marking.`;
+  if (lockedOut === "solving") {
+    return "Subscribe and Mochi will walk you through a photographed question step by step, as well as giving you unlimited rounds.";
+  }
+  return `The free tier includes ${FREE_ROUNDS_PER_DAY} rounds a day. Subscribing lifts the limit and unlocks the camera features.`;
 }
 
 function PlansView({

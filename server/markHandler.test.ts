@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { MarkingError, type Marker, type MarkingResult } from "../src/marking/marking";
-import { MAX_PHOTO_BYTES } from "../src/marking/photo";
+import { MAX_PHOTO_BYTES } from "../src/photo/photo";
 import { handleMarkRequest } from "./markHandler";
 
 const BODY = { stage: "ks2", mediaType: "image/png", base64: "aG9tZXdvcms=" };

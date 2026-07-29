@@ -7,11 +7,18 @@ import {
   type MarkingRequest,
 } from "../src/marking/marking";
 import { STAGES } from "../src/game/stages";
+import {
+  askForJson,
+  buildVisionRequest,
+  VISION_MAX_TOKENS,
+  VISION_MODEL,
+  type MessageCreator,
+} from "./claudeVision";
 
-export const MARKING_MODEL = "claude-opus-5";
+export const MARKING_MODEL = VISION_MODEL;
+export const MARKING_MAX_TOKENS = VISION_MAX_TOKENS;
 
-/** Room for the model to think and to mark a full page of questions. */
-export const MARKING_MAX_TOKENS = 16000;
+export type { MessageCreator };
 
 function systemPrompt(stage: MarkingRequest["stage"]): string {
   return [
@@ -24,80 +31,31 @@ function systemPrompt(stage: MarkingRequest["stage"]): string {
   ].join("\n");
 }
 
-/** The Anthropic client surface this module uses — a fake stands in for tests. */
-export interface MessageCreator {
-  messages: {
-    create(params: Anthropic.MessageCreateParamsNonStreaming): Promise<Anthropic.Message>;
-  };
-}
-
 export function buildMarkingRequest(
   request: MarkingRequest,
 ): Anthropic.MessageCreateParamsNonStreaming {
-  return {
-    model: MARKING_MODEL,
-    max_tokens: MARKING_MAX_TOKENS,
+  return buildVisionRequest({
+    request,
     system: systemPrompt(request.stage),
-    output_config: {
-      effort: "medium",
-      format: {
-        type: "json_schema",
-        schema: MARKING_SCHEMA,
-      },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: request.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-              data: request.base64,
-            },
-          },
-          { type: "text", text: "Mark this homework." },
-        ],
-      },
-    ],
-  };
+    schema: MARKING_SCHEMA,
+    instruction: "Mark this homework.",
+  });
 }
 
-function textFrom(message: Anthropic.Message): string {
-  return message.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("");
-}
-
-/**
- * Mark a photo with Claude. Every failure becomes a `MarkingError` carrying a
- * message that is safe to show a learner — nothing about the model, the key or
- * the transport leaks into the UI.
- */
+/** Mark a photo with Claude. */
 export function createClaudeMarker(client: MessageCreator): Marker {
   return async (request) => {
-    let message: Anthropic.Message;
-    try {
-      message = await client.messages.create(buildMarkingRequest(request));
-    } catch {
-      throw new MarkingError("Mochi could not mark that photo. Please try again.");
-    }
-
-    if (message.stop_reason === "refusal") {
-      throw new MarkingError("Mochi could not mark that photo. Try a photo of the homework page.");
-    }
-    if (message.stop_reason === "max_tokens") {
-      throw new MarkingError("That page has too much on it. Try photographing one page at a time.");
-    }
-
-    let payload: unknown;
-    try {
-      payload = JSON.parse(textFrom(message));
-    } catch {
-      throw new MarkingError("Mochi could not read the marking. Please try again.");
-    }
+    const payload = await askForJson(
+      client,
+      buildMarkingRequest(request),
+      {
+        failed: "Mochi could not mark that photo. Please try again.",
+        refused: "Mochi could not mark that photo. Try a photo of the homework page.",
+        tooLong: "That page has too much on it. Try photographing one page at a time.",
+        garbled: "Mochi could not read the marking. Please try again.",
+      },
+      (message) => new MarkingError(message),
+    );
 
     const result = parseMarkingResult(payload);
     if (result === null) {

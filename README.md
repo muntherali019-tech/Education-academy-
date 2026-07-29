@@ -35,8 +35,11 @@ src/
     random.ts           Seeded PRNG + shuffle, so rounds are reproducible
     progress.ts         Round history plus per-stage and per-subject summaries
     progressStorage.ts  Loads and saves that history, tolerating unreadable data
+    subscription.ts     Plans, the daily free allowance and the access check
+    subscriptionStorage.ts  Loads and saves the subscription and the allowance
+    storage.ts          Shared, failure-tolerant JSON read/write over Web Storage
   test/setup.ts         Vitest setup (jest-dom matchers)
-  App.tsx               Stage picker, round UI and dashboard
+  App.tsx               Stage picker, round UI, dashboard and plans
   main.tsx              React entry point
 ```
 
@@ -47,10 +50,9 @@ directly and reused later by the dashboard and marking features.
 
 Implemented so far: stage selection and 15-question puzzle rounds with seeded,
 reproducible question order and scoring against a 60% pass mark, plus the
-parent/teacher dashboard described below.
+parent/teacher dashboard and the subscription paywall described below.
 
-Still to build: AI homework photo-marking, the scan-and-solve helper, and the
-subscription paywall.
+Still to build: AI homework photo-marking and the scan-and-solve helper.
 
 ### Parent and teacher dashboard
 
@@ -65,6 +67,23 @@ it is per-device and per-browser, with no account and nothing sent anywhere. The
 last 200 rounds are kept. A history that cannot be read — blocked storage, data
 from an older build — is treated as a fresh start rather than an error, and
 "Clear saved progress" wipes it on a shared device.
+
+### Subscription paywall
+
+The free tier allows three rounds a day; starting a fourth offers the monthly or
+yearly plan instead, and the allowance resets at local midnight. Subscribing
+lifts the limit until the plan's term is up, after which access falls back to the
+free tier on its own.
+
+**Checkout is a placeholder.** Choosing a plan takes no payment and contacts no
+payment provider — it only records the choice in `localStorage`. Wiring up a
+real provider is still to do.
+
+The allowance is metered on its own per-day counter
+(`education-academy:usage:v1`), deliberately separate from the dashboard's round
+history, so clearing that history does not hand back free rounds. Being
+client-side, it is a product rule rather than a security boundary: enforcing it
+against a determined user needs a server, which this build does not have.
 
 ## Testing
 

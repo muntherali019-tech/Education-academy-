@@ -139,6 +139,59 @@ button {
   padding: 0;
 }
 
+.allowance {
+  margin: 1.5rem 0 0;
+  color: #7a6a60;
+  font-size: 0.9375rem;
+}
+
+.allowance .link {
+  margin-top: 0;
+}
+
+.plan-list {
+  margin: 1.5rem 0 0;
+}
+
+.plan {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  text-align: left;
+  padding: 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.plan:hover {
+  border-color: var(--ginger);
+  transform: translateY(-1px);
+}
+
+.price {
+  color: var(--ginger);
+  font-weight: 600;
+}
+
+.blurb {
+  grid-column: 1 / -1;
+  color: #7a6a60;
+  font-size: 0.875rem;
+}
+
+.note {
+  color: #7a6a60;
+  font-size: 0.8125rem;
+  margin: 1rem 0 0;
+}
+
+.plans .quit {
+  display: block;
+}
+
 .dashboard h3 {
   font-size: 1rem;
   margin: 1.75rem 0 0.5rem;

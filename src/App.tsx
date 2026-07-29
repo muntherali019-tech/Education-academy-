@@ -19,14 +19,48 @@ import {
   type Round,
 } from "./game/round";
 import { ALL_STAGES, STAGES, type StageId } from "./game/stages";
+import {
+  ALL_PLANS,
+  checkAccess,
+  FREE_ROUNDS_PER_DAY,
+  PLANS,
+  recordRoundStarted,
+  subscribe,
+  type Access,
+  type PlanId,
+  type SubscriptionState,
+  type Usage,
+} from "./game/subscription";
+import {
+  loadSubscription,
+  loadUsage,
+  saveSubscription,
+  saveUsage,
+} from "./game/subscriptionStorage";
+
+type View = "stages" | "dashboard" | "plans";
 
 export default function App() {
   const [round, setRound] = useState<Round | null>(null);
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscription());
+  const [usage, setUsage] = useState<Usage>(() => loadUsage());
+  const [view, setView] = useState<View>("stages");
+  /** True when the plans view was reached by running out of free rounds. */
+  const [lockedOut, setLockedOut] = useState(false);
+
+  const access = checkAccess(usage, subscription);
 
   function start(stage: StageId) {
-    setShowDashboard(false);
+    if (!access.canStartRound) {
+      setLockedOut(true);
+      setView("plans");
+      return;
+    }
+    const spent = recordRoundStarted(usage);
+    setUsage(spent);
+    saveUsage(spent);
+    setView("stages");
     setRound(createRound(stage));
   }
 
@@ -46,6 +80,23 @@ export default function App() {
     saveProgress(empty);
   }
 
+  function choosePlan(plan: PlanId) {
+    const started = subscribe(plan);
+    setSubscription(started);
+    saveSubscription(started);
+    setLockedOut(false);
+  }
+
+  function cancelSubscription() {
+    setSubscription(null);
+    saveSubscription(null);
+  }
+
+  function show(next: View) {
+    setLockedOut(false);
+    setView(next);
+  }
+
   return (
     <main className="app">
       <header className="header">
@@ -60,25 +111,41 @@ export default function App() {
 
       {round !== null ? (
         <RoundView round={round} onAnswer={handleAnswer} onQuit={() => setRound(null)} />
-      ) : showDashboard ? (
+      ) : view === "dashboard" ? (
         <Dashboard
           progress={progress}
-          onBack={() => setShowDashboard(false)}
+          onBack={() => show("stages")}
           onClear={clearProgress}
         />
+      ) : view === "plans" ? (
+        <PlansView
+          access={access}
+          subscription={subscription}
+          lockedOut={lockedOut}
+          onChoose={choosePlan}
+          onCancel={cancelSubscription}
+          onBack={() => show("stages")}
+        />
       ) : (
-        <StagePicker onPick={start} onShowDashboard={() => setShowDashboard(true)} />
+        <StagePicker
+          access={access}
+          onPick={start}
+          onShowDashboard={() => show("dashboard")}
+          onShowPlans={() => show("plans")}
+        />
       )}
     </main>
   );
 }
 
 interface StagePickerProps {
+  access: Access;
   onPick: (stage: StageId) => void;
   onShowDashboard: () => void;
+  onShowPlans: () => void;
 }
 
-function StagePicker({ onPick, onShowDashboard }: StagePickerProps) {
+function StagePicker({ access, onPick, onShowDashboard, onShowPlans }: StagePickerProps) {
   return (
     <section>
       <h2>Pick a stage</h2>
@@ -95,11 +162,24 @@ function StagePicker({ onPick, onShowDashboard }: StagePickerProps) {
           </li>
         ))}
       </ul>
+      <p className="allowance">
+        {access.subscribed ? "Subscribed — unlimited rounds. 🐾" : freeRoundsMessage(access)}{" "}
+        <button type="button" className="link" onClick={onShowPlans}>
+          {access.subscribed ? "Manage subscription" : "See plans"}
+        </button>
+      </p>
       <button type="button" className="link" onClick={onShowDashboard}>
         Parent &amp; teacher dashboard
       </button>
     </section>
   );
+}
+
+function freeRoundsMessage({ freeRoundsLeft }: Access): string {
+  if (freeRoundsLeft === 0) {
+    return "Today's free rounds are all used up.";
+  }
+  return `${freeRoundsLeft} of ${FREE_ROUNDS_PER_DAY} free rounds left today.`;
 }
 
 interface RoundViewProps {
@@ -147,6 +227,68 @@ function RoundView({ round, onAnswer, onQuit }: RoundViewProps) {
       </ul>
       <button type="button" className="quit" onClick={onQuit}>
         Quit round
+      </button>
+    </section>
+  );
+}
+
+interface PlansViewProps {
+  access: Access;
+  subscription: SubscriptionState;
+  lockedOut: boolean;
+  onChoose: (plan: PlanId) => void;
+  onCancel: () => void;
+  onBack: () => void;
+}
+
+function PlansView({
+  access,
+  subscription,
+  lockedOut,
+  onChoose,
+  onCancel,
+  onBack,
+}: PlansViewProps) {
+  if (access.subscribed && subscription) {
+    return (
+      <section className="plans">
+        <h2>Your subscription</h2>
+        <p>
+          {PLANS[subscription.plan].name} — unlimited rounds until{" "}
+          {formatDate(subscription.renewsAt)}.
+        </p>
+        <button type="button" className="primary" onClick={onBack}>
+          Back to stages
+        </button>
+        <button type="button" className="quit" onClick={onCancel}>
+          Cancel subscription
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="plans">
+      <h2>{lockedOut ? "That's today's free rounds" : "Subscribe for unlimited rounds"}</h2>
+      <p>
+        {lockedOut
+          ? `Mochi gives ${FREE_ROUNDS_PER_DAY} free rounds a day. Come back tomorrow for more, or subscribe to keep going now.`
+          : `The free tier includes ${FREE_ROUNDS_PER_DAY} rounds a day. Subscribing lifts the limit.`}
+      </p>
+      <ul className="plan-list">
+        {ALL_PLANS.map((plan) => (
+          <li key={plan.id}>
+            <button type="button" className="plan" onClick={() => onChoose(plan.id)}>
+              <strong>{plan.name}</strong>
+              <span className="price">{plan.price}</span>
+              <span className="blurb">{plan.blurb}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="note">Demo checkout — no payment is taken and nothing leaves this device.</p>
+      <button type="button" className="quit" onClick={onBack}>
+        {lockedOut ? "Maybe later" : "Back to stages"}
       </button>
     </section>
   );

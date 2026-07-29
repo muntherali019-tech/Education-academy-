@@ -192,6 +192,95 @@ button {
   display: block;
 }
 
+.marking-intro {
+  color: #7a6a60;
+  margin: 0 0 1.5rem;
+}
+
+.field {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.stage-select,
+input[type="file"] {
+  width: 100%;
+  font: inherit;
+  padding: 0.625rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.preview {
+  display: block;
+  max-width: 100%;
+  margin: 1.25rem 0;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.marking .primary {
+  margin-top: 1.5rem;
+}
+
+.marking .primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.marking .quit {
+  display: block;
+}
+
+.marking-error {
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #fdece0;
+  color: #8a4b1d;
+}
+
+.marking-result {
+  margin-top: 2rem;
+  border-top: 2px solid var(--line);
+  padding-top: 1rem;
+}
+
+.overall {
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.marked {
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.marked-item {
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.marked-question {
+  margin: 0;
+  font-weight: 600;
+}
+
+.marked-answer,
+.marked-comment {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.marked-answer {
+  color: #7a6a60;
+}
+
 .dashboard h3 {
   font-size: 1rem;
   margin: 1.75rem 0 0.5rem;

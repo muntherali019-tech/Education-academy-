@@ -37,23 +37,35 @@ import {
   saveSubscription,
   saveUsage,
 } from "./game/subscriptionStorage";
+import { MarkingView } from "./marking/MarkingView";
+import type { Marker } from "./marking/marking";
+import { createHttpMarker } from "./marking/markingClient";
 
-type View = "stages" | "dashboard" | "plans";
+type View = "stages" | "dashboard" | "plans" | "marking";
 
-export default function App() {
+/** Why the plans view was reached, when it was not opened deliberately. */
+type Lock = "rounds" | "marking" | null;
+
+const httpMarker = createHttpMarker();
+
+export interface AppProps {
+  /** Injectable so tests can mark homework without a marking service. */
+  marker?: Marker;
+}
+
+export default function App({ marker = httpMarker }: AppProps = {}) {
   const [round, setRound] = useState<Round | null>(null);
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
   const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscription());
   const [usage, setUsage] = useState<Usage>(() => loadUsage());
   const [view, setView] = useState<View>("stages");
-  /** True when the plans view was reached by running out of free rounds. */
-  const [lockedOut, setLockedOut] = useState(false);
+  const [lockedOut, setLockedOut] = useState<Lock>(null);
 
   const access = checkAccess(usage, subscription);
 
   function start(stage: StageId) {
     if (!access.canStartRound) {
-      setLockedOut(true);
+      setLockedOut("rounds");
       setView("plans");
       return;
     }
@@ -84,7 +96,7 @@ export default function App() {
     const started = subscribe(plan);
     setSubscription(started);
     saveSubscription(started);
-    setLockedOut(false);
+    setLockedOut(null);
   }
 
   function cancelSubscription() {
@@ -93,8 +105,18 @@ export default function App() {
   }
 
   function show(next: View) {
-    setLockedOut(false);
+    setLockedOut(null);
     setView(next);
+  }
+
+  /** Photo marking costs money to run, so it is for subscribers. */
+  function showMarking() {
+    if (!access.subscribed) {
+      setLockedOut("marking");
+      setView("plans");
+      return;
+    }
+    show("marking");
   }
 
   return (
@@ -126,12 +148,15 @@ export default function App() {
           onCancel={cancelSubscription}
           onBack={() => show("stages")}
         />
+      ) : view === "marking" ? (
+        <MarkingView marker={marker} onBack={() => show("stages")} />
       ) : (
         <StagePicker
           access={access}
           onPick={start}
           onShowDashboard={() => show("dashboard")}
           onShowPlans={() => show("plans")}
+          onShowMarking={showMarking}
         />
       )}
     </main>
@@ -143,9 +168,16 @@ interface StagePickerProps {
   onPick: (stage: StageId) => void;
   onShowDashboard: () => void;
   onShowPlans: () => void;
+  onShowMarking: () => void;
 }
 
-function StagePicker({ access, onPick, onShowDashboard, onShowPlans }: StagePickerProps) {
+function StagePicker({
+  access,
+  onPick,
+  onShowDashboard,
+  onShowPlans,
+  onShowMarking,
+}: StagePickerProps) {
   return (
     <section>
       <h2>Pick a stage</h2>
@@ -168,6 +200,9 @@ function StagePicker({ access, onPick, onShowDashboard, onShowPlans }: StagePick
           {access.subscribed ? "Manage subscription" : "See plans"}
         </button>
       </p>
+      <button type="button" className="link" onClick={onShowMarking}>
+        Mark my homework 📷
+      </button>
       <button type="button" className="link" onClick={onShowDashboard}>
         Parent &amp; teacher dashboard
       </button>
@@ -235,10 +270,25 @@ function RoundView({ round, onAnswer, onQuit }: RoundViewProps) {
 interface PlansViewProps {
   access: Access;
   subscription: SubscriptionState;
-  lockedOut: boolean;
+  lockedOut: Lock;
   onChoose: (plan: PlanId) => void;
   onCancel: () => void;
   onBack: () => void;
+}
+
+const LOCK_HEADING: Record<"rounds" | "marking", string> = {
+  rounds: "That's today's free rounds",
+  marking: "Photo marking is for subscribers",
+};
+
+function lockBlurb(lockedOut: Lock): string {
+  if (lockedOut === "rounds") {
+    return `Mochi gives ${FREE_ROUNDS_PER_DAY} free rounds a day. Come back tomorrow for more, or subscribe to keep going now.`;
+  }
+  if (lockedOut === "marking") {
+    return "Subscribe and Mochi will mark photos of your homework, as well as giving you unlimited rounds.";
+  }
+  return `The free tier includes ${FREE_ROUNDS_PER_DAY} rounds a day. Subscribing lifts the limit and unlocks photo marking.`;
 }
 
 function PlansView({
@@ -269,12 +319,8 @@ function PlansView({
 
   return (
     <section className="plans">
-      <h2>{lockedOut ? "That's today's free rounds" : "Subscribe for unlimited rounds"}</h2>
-      <p>
-        {lockedOut
-          ? `Mochi gives ${FREE_ROUNDS_PER_DAY} free rounds a day. Come back tomorrow for more, or subscribe to keep going now.`
-          : `The free tier includes ${FREE_ROUNDS_PER_DAY} rounds a day. Subscribing lifts the limit.`}
-      </p>
+      <h2>{lockedOut === null ? "Subscribe for unlimited rounds" : LOCK_HEADING[lockedOut]}</h2>
+      <p>{lockBlurb(lockedOut)}</p>
       <ul className="plan-list">
         {ALL_PLANS.map((plan) => (
           <li key={plan.id}>
@@ -288,7 +334,7 @@ function PlansView({
       </ul>
       <p className="note">Demo checkout — no payment is taken and nothing leaves this device.</p>
       <button type="button" className="quit" onClick={onBack}>
-        {lockedOut ? "Maybe later" : "Back to stages"}
+        {lockedOut === null ? "Back to stages" : "Maybe later"}
       </button>
     </section>
   );

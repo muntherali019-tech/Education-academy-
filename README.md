@@ -38,9 +38,15 @@ src/
     subscription.ts     Plans, the daily free allowance and the access check
     subscriptionStorage.ts  Loads and saves the subscription and the allowance
     storage.ts          Shared, failure-tolerant JSON read/write over Web Storage
+  marking/              AI homework photo-marking (browser half)
+    marking.ts          Marking types, the JSON schema and result validation
+    photo.ts            Photo checks and reading a chosen file
+    markingClient.ts    Posts the photo to the marking endpoint
+    MarkingView.tsx     Photo picker and marked-up results
   test/setup.ts         Vitest setup (jest-dom matchers)
   App.tsx               Stage picker, round UI, dashboard and plans
   main.tsx              React entry point
+server/                 The marking endpoint — holds the API key, never shipped to the browser
 ```
 
 The game rules live in `src/game/` with no React imports, so they can be tested
@@ -50,9 +56,10 @@ directly and reused later by the dashboard and marking features.
 
 Implemented so far: stage selection and 15-question puzzle rounds with seeded,
 reproducible question order and scoring against a 60% pass mark, plus the
-parent/teacher dashboard and the subscription paywall described below.
+parent/teacher dashboard, the subscription paywall and AI homework
+photo-marking described below.
 
-Still to build: AI homework photo-marking and the scan-and-solve helper.
+Still to build: the scan-and-solve helper.
 
 ### Parent and teacher dashboard
 
@@ -78,6 +85,30 @@ free tier on its own.
 **Checkout is a placeholder.** Choosing a plan takes no payment and contacts no
 payment provider — it only records the choice in `localStorage`. Wiring up a
 real provider is still to do.
+
+### AI homework photo-marking
+
+Subscribers can photograph a homework page and have Mochi mark it question by
+question: each one comes back as correct, not quite, or "could not read", with a
+short comment for the learner and a score for the page. Marking is gated behind a
+subscription because every photo costs a real API call.
+
+It runs on `claude-opus-5` with vision, and the reply is constrained with
+structured outputs so the browser receives JSON in a known shape rather than
+prose to parse. The model is told to mark against the chosen UK stage and to
+answer "unclear" rather than guess when the photo or handwriting cannot be read.
+
+**The API key never reaches the browser.** The photo is posted to a marking
+endpoint, and that endpoint holds the key. `server/` is that endpoint: pure
+request-handling plus a Vite dev-server plugin, so `npm run dev` marks for real
+once `ANTHROPIC_API_KEY` is set — copy `.env.example` to `.env.local` to do that.
+Without a key the endpoint answers 501 and the app says photo marking is not
+switched on; nothing else is affected, and the test suite never needs a key.
+`server/README.md` has the endpoint contract and how to deploy it. There is no
+rate limiting in this build — add it at your deployment boundary before exposing
+the endpoint publicly.
+
+### The free allowance
 
 The allowance is metered on its own per-day counter
 (`education-academy:usage:v1`), deliberately separate from the dashboard's round

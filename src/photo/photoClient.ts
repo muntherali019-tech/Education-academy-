@@ -77,7 +77,7 @@ function messageForStatus(status: number, copy: Copy): string {
     return "That photo was too big for Mochi to read. Try a smaller one.";
   }
   if (status === 429) {
-    return "Mochi is busy right now. Please try again in a minute.";
+    return "Mochi has had a lot of photos in the last hour. Please try again later.";
   }
   if (status === 404 || status === 501) {
     return `${copy.feature} is not switched on for this device yet.`;

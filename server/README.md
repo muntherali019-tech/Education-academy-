@@ -15,7 +15,10 @@ browser  ──POST /api/mark──▶  handleMarkRequest   ──▶  createCla
 | `claudeVision.ts` | Shared request building and reply parsing for both features |
 | `claudeMarker.ts` | The marking prompt and schema |
 | `claudeSolver.ts` | The scan-and-solve prompt and schema |
-| `photoRequest.ts` | Body validation and failure handling shared by both handlers |
+| `photoRequest.ts` | Body validation, rate limiting and failure handling shared by both handlers |
+| `rateLimit.ts` | The sliding-window limiter |
+| `photoLimits.ts` | The per-client and overall limits both endpoints share |
+| `clientKey.ts` | Works out who to count a request against |
 | `markHandler.ts` / `solveHandler.ts` | Transport-agnostic: parsed body in, `{ status, body }` out |
 | `markingApiPlugin.ts` | Mounts both handlers on the Vite dev server |
 
@@ -37,14 +40,25 @@ an edge worker with a Node-compatible runtime):
 ```ts
 import { handleSolveRequest } from "./solveHandler";
 import { createDefaultSolver } from "./claudeSolver";
+import { createPhotoLimits, limitsFromEnv } from "./photoLimits";
 
 const solver = createDefaultSolver(); // reads ANTHROPIC_API_KEY once, at startup
+const limits = createPhotoLimits(limitsFromEnv(process.env)); // create once, not per request
 
 export async function POST(request: Request): Promise<Response> {
-  const { status, body } = await handleSolveRequest(await request.json(), solver);
-  return Response.json(body, { status });
+  const key = clientAddress(request); // however your platform exposes it
+  const { status, body, headers } = await handleSolveRequest(await request.json(), solver, {
+    limits: limits.for(key),
+  });
+  return Response.json(body, { status, headers });
 }
 ```
+
+Create the limiters **once, at startup**. Building them per request gives every
+request a fresh allowance, which is the same as having no limit at all. If you
+run more than one instance, each holds its own counts in memory — the effective
+limit is multiplied by the instance count, so use a shared store (or your
+platform's own limiter) if that matters.
 
 Point the browser at them with `VITE_MARKING_ENDPOINT` and `VITE_SOLVE_ENDPOINT`
 if they are not served from `/api/mark` and `/api/solve` on the same origin.
@@ -89,11 +103,40 @@ An unreadable photo is not an error: `/api/solve` answers 200 with an empty
 told to do that rather than guess, and the UI says so.
 
 **Anything else** — `{ "error": "<message safe to show a learner>" }`, with `400`
-for a malformed body, `413` for an oversized photo, `501` when no key is
-configured, and `502` when the work itself failed. Error text is deliberately
+for a malformed body, `413` for an oversized photo, `429` when a rate limit is
+hit (with a `retry-after` header in seconds), `501` when no key is configured,
+and `502` when the work itself failed. Error text is deliberately
 generic: API failures are caught and replaced so nothing about the key or the
 transport reaches the UI (`claudeMarker.test.ts` and `claudeSolver.test.ts` pin
 that).
+
+## Rate limiting
+
+Every photo is a paid API call, so both endpoints are limited before any work is
+done — an over-limit request costs a map lookup, not a model call. Marking and
+solving share one set of limiters, because they share a budget.
+
+| Limit | Default | Environment variable |
+| --- | --- | --- |
+| Per client, per hour | 20 photos | `PHOTO_RATE_LIMIT_PER_CLIENT` |
+| Overall, per hour | 120 photos | `PHOTO_RATE_LIMIT_TOTAL` |
+
+The window slides, so a client gets capacity back gradually rather than all at
+once on a fixed boundary. The per-client limit is checked first, so a client
+that is already over it cannot also eat into the overall allowance.
+
+**The overall limit is the one that actually caps spend.** Clients are counted by
+address, and an address is not a strong identity: `x-forwarded-for` is only
+trusted when you pass `trustProxy` (otherwise anyone could spoof it for a fresh
+allowance per request), and a caller with many source addresses gets an
+allowance for each. Set `PHOTO_RATE_LIMIT_TOTAL` to a number you are willing to
+pay for every hour, and treat the per-client limit as politeness rather than
+protection.
+
+Two more things this does not do, deliberately: the counts are per process and
+held in memory, so they reset on restart and do not add up across instances; and
+there is no cost accounting beyond counting photos. For anything user-facing at
+scale, put your platform's own limiter in front as well.
 
 ## Model and cost
 
@@ -101,5 +144,5 @@ that).
 `VISION_MAX_TOKENS`. Both replies are constrained with structured outputs
 (`output_config.format`) against the schemas in `src/marking/marking.ts` and
 `src/solving/solving.ts`, so the browser gets JSON in a known shape rather than
-prose to parse. There is no rate limiting here — add it at your deployment
-boundary before exposing these endpoints publicly.
+prose to parse. Both endpoints are rate limited — see above for the defaults and
+what they do and do not protect.

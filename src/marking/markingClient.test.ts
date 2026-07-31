@@ -52,7 +52,7 @@ describe("createHttpMarker", () => {
     const busy = createHttpMarker({ fetchFn: vi.fn().mockResolvedValue(jsonResponse({}, 429)) });
 
     await expect(tooBig(REQUEST)).rejects.toThrow(/too big/i);
-    await expect(busy(REQUEST)).rejects.toThrow(/try again in a minute/i);
+    await expect(busy(REQUEST)).rejects.toThrow(/lot of photos in the last hour/i);
   });
 
   it("falls back to a general message for other failures", async () => {

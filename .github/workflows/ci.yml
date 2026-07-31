@@ -34,6 +34,7 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm test
+      # Enforces the coverage floors in vite.config.ts, so a regression fails CI.
+      - run: npm run test:coverage
 
       - run: npx vite build

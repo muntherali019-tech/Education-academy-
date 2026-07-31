@@ -4,16 +4,27 @@ Guidance for AI assistants (and humans) working in this repository.
 
 ## Current state of the repo
 
-**This is a greenfield project.** As of this writing the repository contains
-only `README.md` — there is no source code, build tooling, package manifest,
-test suite, or framework chosen yet. Do not assume any stack, directory layout,
-or commands exist; verify before relying on them.
+The app is implemented and tested. Stack: **React 19 + TypeScript on Vite 8**,
+tested with **Vitest** (jsdom + Testing Library). ESM throughout
+(`"type": "module"`), Node >= 22.
 
-Because almost nothing is implemented, the early decisions you make (language,
-framework, project structure, tooling) set the conventions for everything that
-follows. Make them deliberately, and **update this file whenever you establish a
-new convention or add tooling**, so it stays an accurate map of the codebase.
+```
+src/
+  App.tsx            app shell and screen routing
+  game/              core logic: stages, questions, rounds, progress,
+                     subscription, storage (each with a .test.ts beside it)
+  marking/           AI homework marking (client + view)
+  photo/             photo capture/handling for scan-and-solve
+  test/setup.ts      Vitest setup (jest-dom matchers)
+server/              Express backend
+```
 
+Commands: `npm run dev` (Vite), `npm test` (Vitest), `npm run typecheck`
+(`tsc --noEmit`), `npm run build`, `npm run test:coverage`.
+
+Logic lives in `src/game`, `src/marking`, `src/photo` as plain modules with
+unit tests alongside; components stay presentational. Keep that split, and
+keep this file accurate when the structure changes.
 ## Product vision
 
 **Education-academy** ("A service for students and learners") is a cat-themed

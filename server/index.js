@@ -559,11 +559,13 @@ const STRIPE_PRICES = {
 };
 // One-time prices for gifting a month (mode:payment). Optional — set to enable web gifting.
 const STRIPE_GIFT_PRICES = { junior: process.env.STRIPE_GIFT_PRICE_JUNIOR || "", adult: process.env.STRIPE_GIFT_PRICE_ADULT || "", family: process.env.STRIPE_GIFT_PRICE_FAMILY || "" };
-// Resolve a Stripe price id from the entitlement tier (junior|adult|family) and billing cycle
-// (monthly|annual). Annual falls back to monthly if a yearly price hasn't been configured.
+// Resolve a Stripe price id from the entitlement tier (junior|adult|family) and billing
+// cycle (monthly|annual). Annual deliberately does NOT fall back to the monthly price:
+// the plans screen quotes a yearly figure, so falling back would charge the customer
+// monthly for what the UI sold as a year. Better to refuse than to mis-bill.
 function stripePriceId(plan, cycle) {
-  if (cycle === "annual") return STRIPE_PRICES[`${plan}_yearly`] || STRIPE_PRICES[plan];
-  return STRIPE_PRICES[plan];
+  if (cycle === "annual") return STRIPE_PRICES[`${plan}_yearly`] || "";
+  return STRIPE_PRICES[plan] || "";
 }
 const SITE_URL = process.env.PUBLIC_WEB_URL || "http://localhost:5173";
 
@@ -584,7 +586,11 @@ app.post("/api/stripe/checkout", async (req, res) => {
   if (!STRIPE_SECRET) return res.status(503).json({ error: "Stripe isn't configured on the server yet." });
   const plan = req.body?.plan; const cycle = req.body?.cycle === "annual" ? "annual" : "monthly";
   const price = stripePriceId(plan, cycle);
-  if (!price) return res.status(400).json({ error: "Unknown plan or missing Stripe price ID." });
+  if (!price) {
+    const envVar = cycle === "annual" ? `STRIPE_PRICE_${String(plan).toUpperCase()}_YEARLY` : `STRIPE_PRICE_${String(plan).toUpperCase()}`;
+    console.warn(`checkout refused: no ${cycle} price for plan "${plan}" — set ${envVar}`);
+    return res.status(400).json({ error: "That billing option isn't available right now. Please try the other billing cycle or contact support." });
+  }
   const db = load(); const user = userFromReq(db, req); // optional: links the subscription to the account
   try {
     const session = await stripeForm("checkout/sessions", {

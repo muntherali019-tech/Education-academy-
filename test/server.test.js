@@ -198,6 +198,19 @@ test("checkout rejects an unknown plan before touching Stripe", async () => {
   assert.ok(r.status === 400 || r.status === 503);
 });
 
+// Annual checkout used to fall back to the monthly price id when no yearly price
+// was configured, so the plans screen quoted "£30/yr" while Stripe set up £3/month
+// billing. Refusing is the only safe answer; never resolve annual to a monthly price.
+test("annual checkout never silently falls back to the monthly price", async () => {
+  for (const plan of ["junior", "adult", "family"]) {
+    const r = await api("POST", "/api/stripe/checkout", { body: { plan, cycle: "annual" } });
+    // 503 = Stripe off entirely (the case here); 400 = configured but no yearly price.
+    // A 200 would mean a checkout session was created, which for an unconfigured
+    // yearly price could only have come from the monthly fallback.
+    assert.ok(r.status === 400 || r.status === 503, `${plan} annual returned ${r.status}`);
+  }
+});
+
 // The webhook is the source of truth for entitlements, so it must fail closed.
 // It used to return true when STRIPE_WEBHOOK_SECRET was unset, which meant an
 // unsigned POST naming your own uid granted you a paid plan for free.

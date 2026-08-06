@@ -23,6 +23,26 @@ test("each plan declares a name, price, coverage and features", () => {
   }
 });
 
+// The plans screen defaults to the annual cycle (App.jsx), and annualPriceFor()
+// only falls back to PLANS[plan].annual on the web build — nothing else fills it
+// in. A plan without an annual price therefore renders "Subscribe — undefined/yr".
+// Family shipped without one, so pin this for every plan.
+test("every plan carries a complete annual price", () => {
+  for (const [id, p] of Object.entries(PLANS)) {
+    assert.match(p.annual, /^£\d+$/, `${id} needs an annual price like "£30"`);
+    assert.match(p.annualPerMonth, /^£\d+(\.\d{2})?$/, `${id} needs annualPerMonth like "£2.50"`);
+    assert.ok(p.saveText, `${id} needs saveText for the annual badge`);
+  }
+});
+
+// Annual is priced as 12 months for the cost of 10 across the catalog.
+test("annual pricing is twelve months for the price of ten", () => {
+  for (const [id, p] of Object.entries(PLANS)) {
+    const monthly = Number(p.price.replace("£", ""));
+    assert.equal(Number(p.annual.replace("£", "")), monthly * 10, `${id} annual should be 10x monthly`);
+  }
+});
+
 test("exactly one plan is highlighted as the best value", () => {
   const best = Object.entries(PLANS).filter(([, p]) => p.best).map(([id]) => id);
   assert.deepEqual(best, ["family"], "Family is the highlighted bundle");

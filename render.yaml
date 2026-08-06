@@ -1,5 +1,16 @@
 # One service that runs the website AND its API together.
 # Render reads this file when you create a "Blueprint" from your repo.
+
+# Accounts, entitlements and gift codes live here. Without a database the store
+# falls back to a JSON file on the instance disk, which Render wipes on every
+# deploy and restart — so a paying subscriber would keep being charged while
+# their account and access vanished. Postgres is what makes the money path safe.
+databases:
+  - name: education-academy-db
+    plan: free
+    databaseName: education_academy
+    user: education_academy
+
 services:
   - type: web
     name: education-academy
@@ -48,12 +59,14 @@ services:
         sync: false
       - key: PUBLIC_WEB_URL
         sync: false
-      # Optional but recommended: a Postgres connection string keeps accounts and
-      # entitlements durable across restarts/redeploys (the free file store resets
-      # on Render's ephemeral disk). The `pg` driver is already installed via
-      # optionalDependencies, so setting this value is all that's needed.
+      # Auto-filled from the database declared above, so accounts and entitlements
+      # survive restarts and redeploys. The `pg` driver ships via optionalDependencies
+      # and server/store.js migrates any existing JSON-file data on first boot.
+      # Remove this block only if you accept losing all accounts on every deploy.
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: education-academy-db
+          property: connectionString
       # Admin secret for the weekly report + analytics funnel endpoints:
       - key: ADMIN_SECRET
         sync: false

@@ -70,6 +70,10 @@ export const PLANS = {
   // Family bundles Junior + Adult for one household. "best" highlights it on the plans screen.
   family: {
     name: "Family", price: "£8", covers: "All stages · up to 4 learners", color: "var(--sky)", best: true,
+    // Same 12-for-10 deal as the other tiers. Every plan must carry an annual price:
+    // the plans screen defaults to the annual cycle, so a missing one renders
+    // "Subscribe — undefined/yr" and checkout silently falls back to monthly billing.
+    annual: "£80", annualPerMonth: "£6.67", saveText: "Save 17%",
     features: ["Everything in Junior & Adult", "KS1–KS3 + Higher Education", "Up to 4 learner profiles", "Priority homework marking"],
   },
 };

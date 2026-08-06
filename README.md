@@ -1,173 +1,168 @@
-# Education-academy-
+# 🐱 Education Academy
 
-A service for students and learners.
+A cat-themed learning game for UK learners, hosted by **Mochi** the ginger cat. Covers four stages — **Key Stage 1, Key Stage 2, Key Stage 3, and Higher Education** — with 15-question puzzle rounds, AI homework photo-marking, a **scan-and-solve** helper, a subscription paywall, **per-key-stage inspirational theming**, **accounts with cross-device sync**, and a **parent & teacher portal** with separate goal/task tracks and AI-assisted goal suggestions.
 
-A cat-themed learning game for UK learners, hosted by Mochi the ginger cat. Covers four stages — Key Stage 1, Key Stage 2, Key Stage 3, and Higher Education — with 15-question puzzle rounds, AI homework photo-marking, a scan-and-solve helper, a subscription paywall, and a parent/teacher dashboard with progress tracking.
+Built with **Vite + React**, a small **Express** backend (so your API key never reaches the browser, plus accounts, sync, classes and goals), and **Capacitor** for an Android build. A standalone marketing site lives in `marketing/index.html`.
 
-## Getting started
+> **Shipping to Google Play?** Read **`DEPLOYMENT.md`** — it's the ordered, step-by-step guide, marking what's done in code vs what needs your own accounts, keys and hosting.
 
-Requires Node.js 22.22.2+ (developed on Node 22). The floor comes from `jsdom`,
-which the test suite runs in; it is enforced by `engines` in `package.json`.
+---
 
-```bash
-npm install     # install dependencies
-npm run dev     # start the dev server on http://localhost:5173
-npm test        # run the test suite once
-npm run build   # typecheck and build for production
-```
+## What's inside
 
-Other scripts:
+| Feature | Notes |
+|---|---|
+| 4 stages | KS1, KS2, KS3 (maths/English/science), Higher Education (maths/English/science) |
+| 15-question rounds | Fresh AI-generated questions, with a large offline fallback bank (12–14 per subject) |
+| Scan & Solve | Photograph or type a question → answer + step-by-step working in real time |
+| Mark my homework | Photograph completed work → friendly per-question marking |
+| Subscriptions | Junior **£3/mo** (KS1 & KS2) · Adult **£5/mo** (KS3 & Higher Education) |
+| Parent/teacher dashboard | PIN-gated; accuracy per stage/subject, "needs practice" topics, recent activity |
+| Languages | 8 languages — AI‑teacher lessons with tap‑to‑hear pronunciation, plus **quiz, listening and speaking practice** |
+| Advanced courses | Exam‑prep & revision for **Gas, Electrical, Renewable engineering and Business management** — AI trainer + exam‑style practice (a revision aid, **not** accredited certification) |
+| Free trial | First **72 hours** unlock everything; then Junior £3 / Adult £5 per month |
+| Mochi's voice | Speaks questions, feedback and lessons aloud with an animated mouth — free **on‑device** voice, or a **premium cloud voice** (ElevenLabs) via `VITE_TTS=cloud` |
+| Accessibility | Screen‑reader labels, live‑region announcements, visible focus rings, and a "read aloud" mode for blind & early readers |
+| Progress | Saved on-device via `localStorage` (persists between visits) |
 
-| Script | What it does |
-| --- | --- |
-| `npm run test:watch` | Re-run tests on change |
-| `npm run test:coverage` | Run tests once with a coverage report |
-| `npm run typecheck` | TypeScript check with no emit |
-| `npm run preview` | Serve the production build locally |
+---
 
-## Project layout
+## 1. Prerequisites
 
-```
-src/
-  game/                 Stage, question, round and progress logic (framework-free, fully unit tested)
-    stages.ts           The four UK stages and age-to-stage mapping
-    questions.ts        Question bank, filtered by stage
-    round.ts            Round creation, answering and scoring
-    random.ts           Seeded PRNG + shuffle, so rounds are reproducible
-    progress.ts         Round history plus per-stage and per-subject summaries
-    progressStorage.ts  Loads and saves that history, tolerating unreadable data
-    subscription.ts     Plans, the daily free allowance and the access check
-    subscriptionStorage.ts  Loads and saves the subscription and the allowance
-    storage.ts          Shared, failure-tolerant JSON read/write over Web Storage
-  photo/                Photo handling shared by both camera features
-    photo.ts            Format and size checks, reading a chosen file
-    photoClient.ts      Posting a photo to a vision endpoint
-  marking/              AI homework photo-marking (browser half)
-    marking.ts          Marking types, the JSON schema and result validation
-    markingClient.ts    Posts the photo to the marking endpoint
-    MarkingView.tsx     Photo picker and marked-up results
-  solving/              Scan and solve (browser half)
-    solving.ts          Solution types, the JSON schema and validation
-    solvingClient.ts    Posts the photo to the solving endpoint
-    SolveView.tsx       Photo picker and step-by-step walkthrough
-  errors.ts             The learner-facing error type both features share
-  test/setup.ts         Vitest setup (jest-dom matchers)
-  App.tsx               Stage picker, round UI, dashboard, plans and the camera features
-  main.tsx              React entry point
-server/                 The vision endpoints — hold the API key, never shipped to the browser
-```
+- **Node.js 18 or newer** (`node -v` to check)
+- An **Anthropic API key** — create one at <https://console.anthropic.com>
 
-The game rules live in `src/game/` with no React imports, so they can be tested
-directly and reused later by the dashboard and marking features.
-
-### Current status
-
-Everything on the original plan is now built: stage selection and 15-question
-puzzle rounds with seeded, reproducible question order and scoring against a 60%
-pass mark, the parent/teacher dashboard, the subscription paywall, AI homework
-photo-marking and the scan-and-solve helper — each described below.
-
-The one thing still stubbed is checkout: choosing a plan takes no payment.
-
-### Parent and teacher dashboard
-
-Finishing a round records it against its stage; quitting part way through does
-not count. The dashboard — reachable from the stage picker — shows rounds
-played, rounds passed, best and average scores and the last play date for each
-stage, and rolls the answers up by subject so it is obvious where help is
-needed.
-
-The history is kept in `localStorage` under `education-academy:progress:v1`, so
-it is per-device and per-browser, with no account and nothing sent anywhere. The
-last 200 rounds are kept. A history that cannot be read — blocked storage, data
-from an older build — is treated as a fresh start rather than an error, and
-"Clear saved progress" wipes it on a shared device.
-
-### Subscription paywall
-
-The free tier allows three rounds a day; starting a fourth offers the monthly or
-yearly plan instead, and the allowance resets at local midnight. Subscribing
-lifts the limit until the plan's term is up, after which access falls back to the
-free tier on its own.
-
-**Checkout is a placeholder.** Choosing a plan takes no payment and contacts no
-payment provider — it only records the choice in `localStorage`. Wiring up a
-real provider is still to do.
-
-### AI homework photo-marking
-
-Subscribers can photograph a homework page and have Mochi mark it question by
-question: each one comes back as correct, not quite, or "could not read", with a
-short comment for the learner and a score for the page. Marking is gated behind a
-subscription because every photo costs a real API call.
-
-It runs on `claude-opus-5` with vision, and the reply is constrained with
-structured outputs so the browser receives JSON in a known shape rather than
-prose to parse. The model is told to mark against the chosen UK stage and to
-answer "unclear" rather than guess when the photo or handwriting cannot be read.
-
-### Scan and solve
-
-Stuck on one question rather than finished with a page? Photograph it and Mochi
-works it out — but the walkthrough reveals **one step at a time**, and the answer
-only after the last step. A learner who is stuck half way gets unstuck without
-being handed the answer, and finishes with a similar problem to try themselves.
-Also for subscribers, for the same reason as marking.
-
-When the photo can't be read, both features say so rather than guessing: the
-model is told to return nothing rather than invent a question it can't see.
-
-### Where the API key lives
-
-**It never reaches the browser.** Photos are posted to endpoints that hold the
-key. `server/` is those endpoints: transport-agnostic request handling plus a
-Vite dev-server plugin, so `npm run dev` marks and solves for real once
-`ANTHROPIC_API_KEY` is set — copy `.env.example` to `.env.local` to do that.
-Without a key the endpoints answer 501 and the app says the feature is not
-switched on; nothing else is affected, and the test suite never needs a key.
-`server/README.md` has the contract and how to deploy it.
-
-### Rate limiting
-
-Every photo is a paid API call, so both endpoints are limited before any work is
-done — an over-limit request costs a map lookup rather than a model call, and
-comes back as a 429 with a `retry-after`. The defaults are 20 photos per client
-per hour and 120 across the whole deployment, shared between marking and solving
-because they share a budget; both are configurable with
-`PHOTO_RATE_LIMIT_PER_CLIENT` and `PHOTO_RATE_LIMIT_TOTAL`.
-
-The overall limit is the one that genuinely caps spend. Clients are counted by
-address, which is not a strong identity — `x-forwarded-for` is only trusted when
-you opt in, and a caller with many addresses gets an allowance for each. The
-counts are per process and held in memory, so they reset on restart and do not
-add up across instances. `server/README.md` covers what that does and does not
-protect.
-
-### The free allowance
-
-The allowance is metered on its own per-day counter
-(`education-academy:usage:v1`), deliberately separate from the dashboard's round
-history, so clearing that history does not hand back free rounds. Being
-client-side, it is a product rule rather than a security boundary: enforcing it
-against a determined user needs a server, which this build does not have.
-
-## Testing
-
-Tests run on [Vitest](https://vitest.dev) with
-[Testing Library](https://testing-library.com) in a jsdom environment. Test files
-sit next to the code they cover as `*.test.ts` / `*.test.tsx`.
+## 2. Install
 
 ```bash
-npm test              # run once
-npm run test:coverage # run once with a coverage report
+npm install
 ```
 
-Coverage thresholds live in `vite.config.ts` and CI runs `test:coverage`, so a
-drop in coverage fails the build. They are **floors set just under current
-coverage** — raise them as coverage grows rather than lowering them to make a
-change pass.
+## 3. Add your API key
 
-Nothing in the suite needs an API key. The vision endpoints are served in
-development by the Vite plugin in `server/markingApiPlugin.ts`, which takes
-injectable `createMarker` / `createSolver` factories; the tests pass fakes, so
-the Anthropic SDK is never loaded and no network call is made.
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and paste your key:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+PORT=8787
+```
+
+> The key lives only in the backend (`server/index.js`). The browser calls `/api/claude`, which the server forwards to Anthropic. **Never put the key in frontend code.**
+
+## 4. Run it locally
+
+```bash
+npm start
+```
+
+This starts both the web app and the API together. Open **http://localhost:5173**.
+
+(If you prefer two terminals: `npm run server` and `npm run dev` separately.)
+
+---
+
+## How it works
+
+```
+Browser (React)  ──POST /api/claude──►  Express server  ──x-api-key──►  Anthropic API
+   src/App.jsx                          server/index.js
+```
+
+- `src/data/curriculum.js` — stages, subjects, topics, plans, and the age-tuned tutor prompts.
+- `src/data/bank.js` — offline fallback questions used when there's no internet.
+- `src/lib/api.js` — `generateQuestions`, `markHomework`, `solveQuestion` (all call the backend).
+- `src/lib/progress.js` — localStorage persistence + the stats the dashboard reads.
+- The model is set in `server/index.js` (default `claude-sonnet-4-6`) — change it there if you like.
+
+The dashboard is reached via the chart icon (top-right) or the "Grown-ups" link, behind a simple multiplication gate to keep young children out.
+
+---
+
+## Build the Android app (Capacitor)
+
+```bash
+npm run build          # produces dist/
+npm run cap:add        # one-time: adds the android/ project
+npm run cap:sync       # rebuilds + copies web assets into android/
+npm run cap:open       # opens Android Studio to run / sign / export
+```
+
+You'll need **Android Studio** and a JDK installed. Run on an emulator or device from Android Studio.
+
+### ⚠️ Important for the mobile/production build
+
+The dev setup proxies `/api` to `localhost:8787`, which **won't exist on a phone**. For a real release you must:
+
+1. **Deploy the backend** (`server/index.js`) somewhere with your key set as an env var — e.g. Render, Railway, Fly.io, a VPS, or a serverless function.
+2. Point the app at it by setting an env var before building:
+
+   ```bash
+   VITE_API_BASE=https://your-backend.example.com/api npm run build
+   ```
+
+   (`src/lib/api.js` already reads `VITE_API_BASE`, falling back to `/api` in dev.)
+
+---
+
+## Before you ship to the Play Store (children's app checklist)
+
+This app is aimed partly at children, so it falls under stricter rules. Treat these as starting points, not legal advice:
+
+- **Play "Designed for Families" / target-audience declaration** — set the target age groups in the Play Console; this triggers extra policy requirements.
+- **COPPA (US) and UK GDPR / Age-Appropriate Design Code ("Children's Code")** — minimise data collection, especially for under-13s/under-18s.
+- **Privacy policy** — required, and must clearly state what's collected. Photos sent for marking/solving are processed by the Anthropic API; disclose this and avoid storing images longer than needed.
+- **No behavioural ads / restricted SDKs** for child audiences.
+- **Real payments** — the in-app checkout here is a **demo**. App stores require **Google Play Billing** for digital subscriptions (or Stripe for web). Wire this up before charging.
+- **Data handling** — consider keeping homework photos in memory only (don't persist them), and add a clear consent step for camera use.
+
+---
+
+## Honest limitations (current prototype)
+
+- **Checkout is a demo** — subscribing just flips a local flag; no money moves. Replace with Play Billing / Stripe.
+- **AI features need internet** — quizzes fall back to the offline bank, but marking and solving need a connection (and your API key).
+- **Progress is per-device** — `localStorage` only. Add accounts + a server to sync across devices.
+- **AI can make mistakes** — the app reminds learners that a grown-up should check important answers.
+
+---
+
+Made with 🐾 for curious learners.
+
+## Quality & polish
+- **Whole-app localisation** — UI text follows Mochi's language via a batched, on-device-cached translation layer (`src/lib/i18n.js`); Settings has a **Reset translations** action. Quizzes, solve/mark feedback and courses already generate in the chosen language.
+- **Crash safety** — a top-level error boundary shows a friendly, recoverable screen instead of a blank page.
+- **Installable** — web manifest + icon + Apple/Android meta; **safe-area insets** for notched phones; native **splash/status-bar** config for the Android build.
+- **Accessibility & reach** — respects `prefers-reduced-motion`; **right-to-left layout** for Arabic; spoken narration; focus-visible styles; large tap targets.
+- **Offline awareness** — an offline banner, and on-device caching of course questions.
+- **Worldwide** — first-launch language picker (auto-suggests the device language), and local-currency pricing surfaced from Google Play.
+
+> Before store submission, add PNG app icons (192/512 and an adaptive icon) and have a native speaker proof the cached translations (saved as editable JSON on device). Full UI-string coverage is in place for the main screens; the grown-ups portal and language module still have a few English strings.
+
+## Two separate builds (web vs mobile app)
+The web app and the Android app are **built separately from this one codebase**, to different output folders and with different payment paths:
+
+| | Command | Output | Payments |
+|---|---|---|---|
+| **Web** (your website) | `npm run build:web` | `dist-web/` | Stripe Checkout |
+| **Mobile app** (Google Play) | `npm run build:app` | `dist-app/` | Google Play Billing (RevenueCat) |
+
+- `npm run dev` runs the web build locally with instant "mock" unlock for testing.
+- Mobile packaging: `npm run cap:sync` (builds the app bundle into `dist-app` and syncs Capacitor), then `npm run cap:open`.
+- The active platform is set by `VITE_PLATFORM` via `.env.web` / `.env.app`; `src/lib/platform.js` exposes `isApp()` / `isWeb()`.
+- Web payments need Stripe env vars on the server (see `.env.example` and `PRICING.md`); the app store handles per-country local currency automatically.
+
+## Deploying
+- **Website (with API + payments) — the easy path:** see **DEPLOY_WEBSITE.md** (written in plain steps). It uses `render.yaml` to run one service that builds `dist-web` and serves it together with the API, so you only manage one URL.
+- **Google Play app:** see **DEPLOYMENT.md**. Pricing/currency for both: **PRICING.md**.
+
+## One self-contained file (one app, one file)
+The whole app can be emitted as a single HTML file:
+```
+npm install -D vite-plugin-singlefile
+npm run build:onefile        # -> dist-onefile/index.html
+```
+`dist-onefile/index.html` bundles all JS/CSS inline — open it from disk or drop it on any static host. It uses demo (mock) billing; set `VITE_API_BASE` in `.env.onefile` to your deployed API to switch on the AI tutor. The full **website** (with accounts, Stripe and the API) remains the separate `npm run build:web` + server deploy described in DEPLOY_WEBSITE.md.

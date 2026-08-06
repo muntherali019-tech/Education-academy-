@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Education Academy — Learn &amp; play with Mochi</title>
+<meta name="description" content="A cat-themed learning app for the UK curriculum (KS1–Higher Education). Quiz rounds, AI homework marking, parent &amp; teacher tracking. No ads, kid-safe." />
+<meta name="theme-color" content="#F2A33A" />
+<link rel="canonical" href="%SITE%/welcome" />
+
+<!-- OpenGraph / social sharing -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Education Academy" />
+<meta property="og:title" content="Education Academy — Learn &amp; play with Mochi" />
+<meta property="og:description" content="A kid-safe learning app for the UK curriculum (KS1–Higher Education): quiz rounds, AI homework marking, and parent &amp; teacher tracking. No ads." />
+<meta property="og:url" content="%SITE%/welcome" />
+<meta property="og:image" content="%SITE%/icon-512.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Education Academy — Learn &amp; play with Mochi" />
+<meta name="twitter:description" content="Kid-safe UK-curriculum learning (KS1–Higher Education) with AI homework marking and parent &amp; teacher tracking. No ads." />
+<meta name="twitter:image" content="%SITE%/icon-512.png" />
+
+<!-- Structured data: helps search engines show rich results -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Education Academy",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Web, Android",
+  "url": "%SITE%/",
+  "description": "A kid-safe learning app for the UK curriculum (KS1–Higher Education) with quiz rounds, AI homework marking, and parent & teacher tracking.",
+  "offers": [
+    { "@type": "Offer", "name": "Junior monthly", "price": "3.00", "priceCurrency": "GBP" },
+    { "@type": "Offer", "name": "Junior annual", "price": "30.00", "priceCurrency": "GBP" },
+    { "@type": "Offer", "name": "Adult monthly", "price": "5.00", "priceCurrency": "GBP" },
+    { "@type": "Offer", "name": "Adult annual", "price": "50.00", "priceCurrency": "GBP" }
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF7EC; --ink:#43342a; --muted:#9b8a7a; --ginger:#F2A33A;
+    --coral:#FF6B8A; --mint:#23BFA6; --sky:#4DA6FF; --purple:#9B7EDE; --purple-deep:#6b4fb0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.55}
+  h1,h2,h3,.fred{font-family:'Fredoka',sans-serif;font-weight:600;line-height:1.1}
+  a{color:inherit}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .btn{display:inline-block;font-family:'Fredoka';font-weight:600;font-size:17px;border:none;border-radius:16px;padding:14px 24px;cursor:pointer;text-decoration:none}
+  .btn.primary{background:var(--ginger);color:#fff;box-shadow:0 6px 0 #c9821f}
+  .btn.dark{background:var(--ink);color:#fff;box-shadow:0 6px 0 #2a2019}
+  .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 6px 0 #ecdcc9}
+  .btn:active{transform:translateY(3px);box-shadow:none}
+
+  nav{position:sticky;top:0;background:#fff7ecd9;backdrop-filter:blur(8px);z-index:9;border-bottom:1px solid #f0e3d2}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Fredoka';font-weight:700;font-size:20px}
+  .logo .badge{width:40px;height:40px;border-radius:12px;background:linear-gradient(160deg,#FFD9A0,#F2A33A);display:grid;place-items:center;font-size:22px}
+
+  header.hero{padding:64px 0 40px;background:radial-gradient(circle at 80% 0%,#FFE6C2,transparent 50%)}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center}
+  .hero h1{font-size:clamp(34px,5vw,56px)}
+  .hero p.sub{font-size:19px;color:#6a564a;margin:18px 0 26px;max-width:30ch}
+  .cta{display:flex;gap:14px;flex-wrap:wrap}
+  .trust{margin-top:22px;font-weight:800;color:var(--muted);font-size:14px}
+  .heroart{background:linear-gradient(160deg,#fff,#FFF1DC);border:3px solid #fff;border-radius:32px;padding:28px;box-shadow:0 24px 60px rgba(208,150,90,.22);text-align:center}
+  .cat{width:180px;height:180px;margin:0 auto}
+  .badgepills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+  .pill{background:#fff;border:2px solid #f1e6d8;border-radius:999px;padding:7px 13px;font-weight:800;font-size:13px}
+
+  section{padding:54px 0}
+  .eyebrow{font-weight:800;color:var(--ginger);letter-spacing:.5px;text-transform:uppercase;font-size:13px}
+  h2.title{font-size:clamp(26px,3.5vw,38px);margin:8px 0 8px}
+  .lede{color:#6a564a;max-width:60ch;font-size:17px}
+  .grid{display:grid;gap:18px;margin-top:30px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card{background:#fff;border:2px solid #f1e6d8;border-radius:22px;padding:22px}
+  .card .em{font-size:30px}
+  .card h3{font-size:20px;margin:10px 0 6px}
+  .card p{color:#6a564a;font-size:15px}
+  .stage{color:#fff}
+  .stage .age{font-weight:800;opacity:.9;font-size:13px;margin-top:2px}
+
+  .schools{background:linear-gradient(160deg,#EFE8FF,#F7F2FF);border-radius:32px;padding:40px;margin:0 20px}
+  .schools .inner{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+
+  .price{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}
+  .plan{border-radius:24px;padding:26px;color:#fff}
+  .plan .amt{font-family:'Fredoka';font-weight:700;font-size:40px}
+  .plan ul{list-style:none;margin-top:14px}
+  .plan li{padding:6px 0;font-weight:700}
+  .plan li::before{content:"✓ ";font-weight:900}
+
+  .safe .grid{margin-top:24px}
+  footer{padding:40px 0;border-top:1px solid #f0e3d2;color:var(--muted);font-weight:700}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  footer a{margin-left:18px;text-decoration:none}
+  .note{font-size:13px;color:var(--muted);margin-top:10px}
+
+  @media(max-width:860px){
+    .hero .wrap,.schools .inner{grid-template-columns:1fr}
+    .g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.g2,.price{grid-template-columns:1fr}
+    .heroart{order:-1}
+  }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="logo"><span class="badge">🐱</span> Education Academy</div>
+  <a class="btn ghost" style="padding:10px 18px;box-shadow:0 4px 0 #ecdcc9" href="#get">Open the app</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <h1>Where curious kids<br>learn with a smile.</h1>
+    <p class="sub">A cat-themed learning adventure for the UK curriculum — from KS1 all the way to Higher Education. Guided by Mochi 🐾</p>
+    <div class="cta" id="get">
+      <a class="btn primary" href="#" data-link="webapp">Start learning free</a>
+      <a class="btn dark" href="#" data-link="googleplay">Get it on Google Play</a>
+    </div>
+    <div class="trust">No ads · Kid-safe · Built for the UK curriculum</div>
+  </div>
+  <div class="heroart">
+    <svg class="cat" viewBox="0 0 200 200" aria-label="Mochi the cat">
+      <ellipse cx="100" cy="150" rx="62" ry="40" fill="#F7B05B"/>
+      <circle cx="100" cy="96" r="58" fill="#F9BE6E"/>
+      <path d="M52 64 L44 28 L80 50 Z" fill="#F7B05B"/><path d="M148 64 L156 28 L120 50 Z" fill="#F7B05B"/>
+      <path d="M55 60 L50 38 L72 52 Z" fill="#F7C9A0"/><path d="M145 60 L150 38 L128 52 Z" fill="#F7C9A0"/>
+      <circle cx="80" cy="96" r="9" fill="#3a2c22"/><circle cx="120" cy="96" r="9" fill="#3a2c22"/>
+      <circle cx="83" cy="93" r="3" fill="#fff"/><circle cx="123" cy="93" r="3" fill="#fff"/>
+      <path d="M94 110 q6 6 12 0" stroke="#3a2c22" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="72" cy="108" rx="9" ry="6" fill="#FF9DB0" opacity=".7"/><ellipse cx="128" cy="108" rx="9" ry="6" fill="#FF9DB0" opacity=".7"/>
+    </svg>
+    <div class="badgepills">
+      <span class="pill">⭐ Stars &amp; streaks</span>
+      <span class="pill">📸 AI homework help</span>
+      <span class="pill">📊 Parent &amp; teacher view</span>
+    </div>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="eyebrow">Four stages, one friendly cat</div>
+  <h2 class="title">Grows with every learner</h2>
+  <p class="lede">Age-appropriate questions and tone for every stage of school — and beyond.</p>
+  <div class="grid g4">
+    <div class="card stage" style="background:linear-gradient(160deg,#FFB36B,#F2913A)"><div class="em">🐣</div><h3>Key Stage 1</h3><div class="age">Ages 5–7</div></div>
+    <div class="card stage" style="background:linear-gradient(160deg,#5BC0EB,#2B96D6)"><div class="em">🐱</div><h3>Key Stage 2</h3><div class="age">Ages 7–11</div></div>
+    <div class="card stage" style="background:linear-gradient(160deg,#A98BE8,#7C5FD0)"><div class="em">🦉</div><h3>Key Stage 3</h3><div class="age">Ages 11–14</div></div>
+    <div class="card stage" style="background:linear-gradient(160deg,#3FD0B6,#159A83)"><div class="em">🎓</div><h3>Higher Education</h3><div class="age">College &amp; beyond</div></div>
+  </div>
+</div></section>
+
+<section style="background:#fff"><div class="wrap">
+  <div class="eyebrow">What's inside</div>
+  <h2 class="title">Made to keep them coming back</h2>
+  <div class="grid g3">
+    <div class="card"><div class="em">🎯</div><h3>15-question rounds</h3><p>Bite-sized practice in maths, English and science with instant feedback, stars and streaks.</p></div>
+    <div class="card"><div class="em">📸</div><h3>AI homework marking</h3><p>Snap a photo of homework and Mochi gives gentle, encouraging feedback and next steps.</p></div>
+    <div class="card"><div class="em">🔍</div><h3>Scan &amp; solve</h3><p>Stuck on a question? Scan it for a clear, step-by-step explanation — not just the answer.</p></div>
+    <div class="card"><div class="em">📊</div><h3>Parent &amp; teacher portal</h3><p>See a child's learning health at a glance, with accuracy, activity and topics to practise.</p></div>
+    <div class="card"><div class="em">✅</div><h3>Goals &amp; tasks</h3><p>Parents and teachers each set and mark their own goals — independently, with AI suggestions.</p></div>
+    <div class="card"><div class="em">🔄</div><h3>Progress that follows them</h3><p>Sign in and a child's stars and progress sync across every device they use.</p></div>
+    <div class="card"><div class="em">🌍</div><h3>Speak 8 languages</h3><p>Learn English, Spanish, French, Mandarin, Russian, Arabic, Portuguese and Hindi with your AI teacher.</p></div>
+    <div class="card"><div class="em">🔊</div><h3>A talking, accessible mascot</h3><p>Mochi reads aloud in a cheerful voice with full screen‑reader support — built for blind and sighted learners alike.</p></div>
+  </div>
+</div></section>
+
+<section><div class="schools"><div class="inner">
+  <div>
+    <div class="eyebrow">For schools</div>
+    <h2 class="title">A dashboard for every classroom</h2>
+    <p class="lede">Create a class, share a join code, and track every pupil's progress. Set work and mark it — kept completely separate from what parents set at home.</p>
+  </div>
+  <div class="grid g2" style="margin-top:0">
+    <div class="card"><div class="em">👩‍🏫</div><h3>Class codes</h3><p>Parents link their child with a simple code. No fuss.</p></div>
+    <div class="card"><div class="em">🧑‍🎓</div><h3>Track pupils</h3><p>See accuracy and activity for the whole class.</p></div>
+    <div class="card"><div class="em">📝</div><h3>Assign &amp; mark</h3><p>Set tasks per pupil and mark them off as they go.</p></div>
+    <div class="card"><div class="em">✨</div><h3>AI-assisted</h3><p>Generate age-appropriate goals in a tap.</p></div>
+  </div>
+</div></div></section>
+
+<section><div class="wrap">
+  <div class="eyebrow">Simple pricing</div>
+  <h2 class="title">One small subscription per family</h2>
+  <p class="lede">Cancel any time. Purchases are protected behind a parental gate.</p>
+  <div class="price">
+    <div class="plan" style="background:linear-gradient(160deg,#5BC0EB,#2B96D6)">
+      <div class="fred" style="font-size:24px">Junior</div>
+      <div class="amt">£3<span style="font-size:18px">/mo</span></div>
+      <ul><li>Key Stage 1</li><li>Key Stage 2</li><li>All subjects &amp; helpers</li></ul>
+    </div>
+    <div class="plan" style="background:linear-gradient(160deg,#A98BE8,#7C5FD0)">
+      <div class="fred" style="font-size:24px">Adult</div>
+      <div class="amt">£5<span style="font-size:18px">/mo</span></div>
+      <ul><li>Key Stage 3</li><li>Higher Education</li><li>All subjects &amp; helpers</li></ul>
+    </div>
+  </div>
+  <p class="note">Prices shown are examples set in the app and can be changed before launch.</p>
+</div></section>
+
+<section class="safe" style="background:#fff"><div class="wrap">
+  <div class="eyebrow">Safe by design</div>
+  <h2 class="title">Built for children, respected by parents</h2>
+  <div class="grid g3">
+    <div class="card"><div class="em">🚫</div><h3>No third-party ads</h3><p>No behavioural advertising and no third-party analytics tracking your child.</p></div>
+    <div class="card"><div class="em">🔒</div><h3>Parental gate</h3><p>Purchases and any links out sit behind a grown-up check.</p></div>
+    <div class="card"><div class="em">📜</div><h3>Privacy-first</h3><p>Designed to align with COPPA and the UK Children's Code.</p></div>
+  </div>
+  <div style="text-align:center;margin-top:34px">
+    <a class="btn primary" href="#" data-link="webapp">Start learning free</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div>© <span id="yr"></span> Education Academy</div>
+  <div>
+    <a href="#" data-link="privacy">Privacy</a>
+    <a href="#" data-link="terms">Terms</a>
+    <a href="#" data-link="support">Support</a>
+  </div>
+</div></footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // Same-origin links served by server/index.js (clean URLs), matching the other marketing pages.
+  // The Google Play URL uses the permanent app id from capacitor.config.json; the listing goes live once published.
+  const LINKS = {
+    webapp: '/',                                  // the React app (SPA) is served at the site root
+    googleplay: 'https://play.google.com/store/apps/details?id=com.educationacademy.app',
+    privacy: '/privacy', terms: '/terms', support: '/support'
+  };
+  document.querySelectorAll('[data-link]').forEach(a => { const k = a.getAttribute('data-link'); if (LINKS[k]) a.setAttribute('href', LINKS[k]); });
+</script>
+</body>
+</html>

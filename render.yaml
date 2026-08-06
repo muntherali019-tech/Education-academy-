@@ -1,0 +1,72 @@
+# One service that runs the website AND its API together.
+# Render reads this file when you create a "Blueprint" from your repo.
+
+# Accounts, entitlements and gift codes live here. Without a database the store
+# falls back to a JSON file on the instance disk, which Render wipes on every
+# deploy and restart — so a paying subscriber would keep being charged while
+# their account and access vanished. Postgres is what makes the money path safe.
+databases:
+  - name: education-academy-db
+    plan: free
+    databaseName: education_academy
+    user: education_academy
+
+services:
+  - type: web
+    name: education-academy
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install && npm run build:web
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Render terminates TLS at its proxy; this makes req.ip the real client
+      # address so per-IP rate limits apply per visitor, not site-wide.
+      - key: TRUST_PROXY
+        value: "1"
+      # Signs auth tokens. Auto-generated so production never runs on the
+      # insecure dev fallback secret.
+      - key: AUTH_SECRET
+        generateValue: true
+      # Paste these values in the Render dashboard (they are secret, so not stored here):
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_JUNIOR
+        sync: false
+      - key: STRIPE_PRICE_ADULT
+        sync: false
+      - key: STRIPE_PRICE_FAMILY
+        sync: false
+      - key: STRIPE_PRICE_JUNIOR_YEARLY
+        sync: false
+      - key: STRIPE_PRICE_ADULT_YEARLY
+        sync: false
+      - key: STRIPE_PRICE_FAMILY_YEARLY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_GIFT_PRICE_JUNIOR
+        sync: false
+      - key: STRIPE_GIFT_PRICE_ADULT
+        sync: false
+      - key: STRIPE_GIFT_PRICE_FAMILY
+        sync: false
+      - key: PUBLIC_WEB_URL
+        sync: false
+      # Auto-filled from the database declared above, so accounts and entitlements
+      # survive restarts and redeploys. The `pg` driver ships via optionalDependencies
+      # and server/store.js migrates any existing JSON-file data on first boot.
+      # Remove this block only if you accept losing all accounts on every deploy.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: education-academy-db
+          property: connectionString
+      # Admin secret for the weekly report + analytics funnel endpoints:
+      - key: ADMIN_SECRET
+        sync: false

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Status · Education Academy</title>
+<style>
+  :root { --cream:#FFF4E6; --ink:#3a2b22; --muted:#7a6a5d; --ginger:#F5A24B; }
+  body { margin:0; background:var(--cream); color:var(--ink); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:48px 20px; text-align:center; }
+  .logo { width:56px; height:56px; border-radius:16px; background:var(--ginger); display:inline-grid; place-items:center; font-size:30px; }
+  h1 { font-size:24px; margin:16px 0 4px; }
+  .card { background:#fff; border:2px solid #eadfce; border-radius:18px; padding:22px; margin-top:18px; text-align:left; }
+  .row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0e6d8; }
+  .row:last-child { border-bottom:0; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:8px; vertical-align:-1px; }
+  .ok { background:#22b07d; } .bad { background:#e5484d; } .wait { background:#caa64a; }
+  .muted { color:var(--muted); font-size:13px; }
+  a { color:#6b4fb0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">🐱</div>
+  <h1>Education Academy status</h1>
+  <p class="muted" id="ts">Checking…</p>
+  <div class="card">
+    <div class="row"><span><span class="dot wait" id="apiDot"></span>Service</span><strong id="apiTxt">Checking…</strong></div>
+    <div class="row"><span><span class="dot wait" id="aiDot"></span>AI tutor</span><strong id="aiTxt">Checking…</strong></div>
+  </div>
+  <p class="muted" style="margin-top:18px"><a href="/">Open the app</a> · <a href="/support">Support</a></p>
+</div>
+<script>
+  fetch("/api/health").then(r => r.json()).then(d => {
+    document.getElementById("apiDot").className = "dot ok";
+    document.getElementById("apiTxt").textContent = "All systems go";
+    var ai = d && d.hasKey;
+    document.getElementById("aiDot").className = "dot " + (ai ? "ok" : "bad");
+    document.getElementById("aiTxt").textContent = ai ? "Ready" : "Not configured";
+    document.getElementById("ts").textContent = "Last checked: " + new Date().toLocaleString();
+  }).catch(() => {
+    document.getElementById("apiDot").className = "dot bad";
+    document.getElementById("apiTxt").textContent = "Unavailable";
+    document.getElementById("aiDot").className = "dot bad";
+    document.getElementById("aiTxt").textContent = "Unavailable";
+    document.getElementById("ts").textContent = "Couldn't reach the service.";
+  });
+</script>
+</body>
+</html>

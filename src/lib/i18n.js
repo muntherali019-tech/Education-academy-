@@ -41,6 +41,9 @@ export const STRINGS = [
   "Sign out", "Delete my account & data", "Email", "Copy", "Create a class to get started.", "Create", "Create a class",
   "Add pupil", "Add a pupil", "Add a goal or task", "Add task", "Link",
   "/month", "✨ Free trial active — {h}h left", "Subscribe — {price}/mo", "Subscribe & start — {price}/mo",
+  // The plans and paywall screens default to the annual cycle, so these are the
+  // pricing strings most users see first.
+  "/year", "Save 17%", "{pm}/mo · {save}", "Subscribe — {price}/yr", "Subscribe & start — {price}/yr",
   "{ks} is locked", "Unlock it with the {plan} plan", "You got {c} out of {n} right",
   "You scored {c}/{n}! 🎉", "{c}/{n} — lovely listening! 🎧", "You practised {n} phrases in {lang}.",
   "Restore purchases", "Manage subscription", "Subscription management becomes available once billing is set up.",

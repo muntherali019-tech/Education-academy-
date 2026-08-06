@@ -795,7 +795,7 @@ export default function App() {
               {p.best && <span className="ribbon">{t("Best value")}</span>}
               <h3 className="fred">{p.name}</h3>
               {cycle === "annual"
-                ? <div style={{ marginTop: 6 }}><span className="price">{annualPriceFor(key)}</span><span style={{ fontWeight: 800 }}> {t("/year")}</span><div style={{ fontWeight: 800, fontSize: 13, opacity: .95 }}>{tf("{pm}/mo · {save}", { pm: p.annualPerMonth, save: t("Save 17%") })}</div></div>
+                ? <div style={{ marginTop: 6 }}><span className="price">{annualPriceFor(key)}</span><span style={{ fontWeight: 800 }}> {t("/year")}</span><div style={{ fontWeight: 800, fontSize: 13, opacity: .95 }}>{tf("{pm}/mo · {save}", { pm: p.annualPerMonth, save: t(p.saveText) })}</div></div>
                 : <div style={{ marginTop: 6 }}><span className="price">{priceFor(key)}</span><span style={{ fontWeight: 800 }}> {t("/month")}</span></div>}
               <div style={{ fontWeight: 800, opacity: .95, marginTop: 2 }}>{p.covers}</div>
               <ul>{p.features.map((f) => <li key={f}><Check size={18} /> {f}</li>)}</ul>
@@ -827,7 +827,7 @@ export default function App() {
             <div className="plan" style={{ background: p.color }}>
               <h3 className="fred">{p.name}</h3>
               {cycle === "annual"
-                ? <div style={{ marginTop: 6 }}><span className="price">{annualPriceFor(plan)}</span><span style={{ fontWeight: 800 }}> {t("/year")}</span><div style={{ fontWeight: 800, fontSize: 13, opacity: .95 }}>{tf("{pm}/mo · {save}", { pm: p.annualPerMonth, save: t("Save 17%") })}</div></div>
+                ? <div style={{ marginTop: 6 }}><span className="price">{annualPriceFor(plan)}</span><span style={{ fontWeight: 800 }}> {t("/year")}</span><div style={{ fontWeight: 800, fontSize: 13, opacity: .95 }}>{tf("{pm}/mo · {save}", { pm: p.annualPerMonth, save: t(p.saveText) })}</div></div>
                 : <div style={{ marginTop: 6 }}><span className="price">{priceFor(plan)}</span><span style={{ fontWeight: 800 }}> {t("/month")}</span></div>}
               <div style={{ fontWeight: 800, opacity: .95, marginTop: 2 }}>{p.covers}</div>
               <ul>{p.features.map((f) => <li key={f}><Check size={18} /> {f}</li>)}</ul>

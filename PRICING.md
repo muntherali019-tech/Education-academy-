@@ -1,12 +1,22 @@
 # Pricing & per-country overrides
 
-Base prices: **Junior £3/month** (KS1 & KS2), **Adult £5/month** (KS3, Higher Education & advanced courses). A 72-hour free trial precedes billing.
+Base prices: **Junior £3/month** (KS1 & KS2), **Adult £5/month** (KS3, Higher Education & advanced courses), **Family £8/month** (all stages, up to 4 learners). A 72-hour free trial precedes billing.
 
-**Annual plans (best value, ~17% off — 12 months for the price of 10):** Junior **£30/year** (£2.50/mo equivalent), Adult **£50/year** (£4.17/mo equivalent). The plans and paywall screens default to the annual cycle with a monthly/annual toggle; learners can switch either way.
+**Annual plans (best value, ~17% off — 12 months for the price of 10):** Junior **£30/year** (£2.50/mo equivalent), Adult **£50/year** (£4.17/mo equivalent), Family **£80/year** (£6.67/mo equivalent). The plans and paywall screens default to the annual cycle with a monthly/annual toggle; learners can switch either way.
+
+Every plan in `PLANS` must carry an `annual` price. The screens default to the annual
+cycle, so a plan without one renders "Subscribe — undefined/yr" (`plans.test.js` pins this).
 
 To enable annual on each store:
-- **Stripe (web):** create a recurring **yearly** Price on each Product and set `STRIPE_PRICE_JUNIOR_YEARLY` / `STRIPE_PRICE_ADULT_YEARLY` on the server. If unset, annual checkout falls back to the monthly price.
-- **Google Play (app):** add a **yearly** base plan to each subscription with product IDs `whisker_junior_yearly` and `whisker_adult_yearly` (alongside the existing monthly `whisker_junior_monthly` / `whisker_adult_monthly`).
+- **Stripe (web):** create a recurring **yearly** Price on each Product and set
+  `STRIPE_PRICE_JUNIOR_YEARLY` / `STRIPE_PRICE_ADULT_YEARLY` / `STRIPE_PRICE_FAMILY_YEARLY`
+  on the server. **All three are required.** If one is missing, annual checkout for that
+  plan is refused — it deliberately does *not* fall back to the monthly price, because the
+  UI has already quoted a yearly figure and billing monthly against it would mis-charge
+  the customer.
+- **Google Play (app):** add a **yearly** base plan to each subscription with product IDs
+  `whisker_junior_yearly`, `whisker_adult_yearly` and `whisker_family_yearly` (alongside the
+  existing monthly `whisker_junior_monthly` / `whisker_adult_monthly` / `whisker_family_monthly`).
 
 Both stores can **charge each user in their local currency**. You can let the store auto-convert from your base price, or set explicit per-country prices (recommended for clean, "charm" pricing like 4.99 instead of an odd converted figure).
 

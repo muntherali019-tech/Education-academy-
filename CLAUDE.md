@@ -25,6 +25,19 @@ Commands: `npm run dev` (Vite), `npm test` (Vitest), `npm run typecheck`
 Logic lives in `src/game`, `src/marking`, `src/photo` as plain modules with
 unit tests alongside; components stay presentational. Keep that split, and
 keep this file accurate when the structure changes.
+
+### Styling and colour contrast
+
+All styling is `src/styles.css` (the only stylesheet `src/main.tsx` imports —
+`src/index.css` is left over and unused). The palette lives in `:root`.
+
+The audience is children and schools, so text must clear **WCAG 2.1 AA**: 4.5:1
+for normal text, 3:1 for large text and graphical elements. `--ginger` is the
+brand fill — buttons, borders, the progress bar — and only reaches 2.71:1 on
+white, so **text on a light background must use `--ginger-text`** instead.
+`src/styles.test.ts` reads the tokens back out of the stylesheet and asserts
+every pair, so a palette edit fails the suite rather than quietly regressing the
+app. Add new pairs there when you add a colour.
 ## Product vision
 
 **Education-academy** ("A service for students and learners") is a cat-themed

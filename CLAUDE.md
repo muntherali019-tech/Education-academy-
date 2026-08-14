@@ -2,93 +2,214 @@
 
 Guidance for AI assistants (and humans) working in this repository.
 
-## Current state of the repo
+## What this is
 
-The app is implemented and tested. Stack: **React 19 + TypeScript on Vite 8**,
-tested with **Vitest** (jsdom + Testing Library). ESM throughout
-(`"type": "module"`), Node >= 22.
+**Education Academy** ("A service for students and learners") — a cat-themed
+learning game for UK learners, hosted by **Mochi the ginger cat**. It covers four
+stages aligned to the UK system (Key Stage 1, 2, 3 and Higher Education) with
+15-question puzzle rounds, AI homework photo-marking, a scan-and-solve helper, and
+a subscription paywall with a daily free allowance.
+
+The app is implemented and tested. `README.md` is the contributor-facing overview;
+this file is the map for changing the code.
+
+## Tech stack
+
+- **React 19 + TypeScript on Vite 8.** ESM throughout (`"type": "module"`).
+- **Vitest** (jsdom + Testing Library + jest-dom) for tests.
+- **`@anthropic-ai/sdk`** for the two vision features, used **only** from `server/`.
+- Plain CSS (`src/index.css`, `src/styles.css`). No CSS framework, no state library,
+  no router — `App.tsx` switches screens from local state.
+- **Node ≥ 22.22.2** (`^22.22.2 || ^24.15.0 || >=26.0.0`). The floor comes from
+  `jsdom` 30, which bundles undici 8 and calls `worker_threads.markAsUncloneable`;
+  Node 20 cannot run the suite. It's enforced by `engines`.
+- No linter or formatter is configured.
+
+## Commands
+
+```bash
+npm install            # install dependencies
+npm run dev            # Vite dev server on http://localhost:5173 (also mounts /api/mark and /api/solve)
+npm test               # vitest run — the whole suite (22 files, ~246 tests)
+npm run test:watch     # vitest in watch mode
+npm run typecheck      # tsc --noEmit
+npm run test:coverage  # vitest run --coverage (enforces the floors in vite.config.ts)
+npm run build          # tsc --noEmit && vite build
+npm run preview        # serve the production build
+```
+
+Run one file or one test: `npx vitest run src/game/round.test.ts`,
+`npx vitest run -t "scores a perfect round"`.
+
+## Project structure
 
 ```
 src/
-  App.tsx            app shell and screen routing
-  game/              core logic: stages, questions, rounds, progress,
-                     subscription, storage (each with a .test.ts beside it)
-  marking/           AI homework marking (client + view)
-  photo/             photo capture/handling for scan-and-solve
-  test/setup.ts      Vitest setup (jest-dom matchers)
-server/              Express backend
+  main.tsx              React entry point
+  App.tsx               App shell: stage picker, round UI, dashboard, plans, camera features
+  components/           Presentational screens used by App.tsx
+    StageSelect.tsx     Stage picker
+    Quiz.tsx            The round UI
+    Results.tsx         End-of-round summary
+    ComingSoon.tsx      Placeholder for unbuilt areas
+  game/                 Core rules — framework-free, no React imports, fully unit tested
+    stages.ts           The four UK stages and age-to-stage mapping
+    questions.ts        Question bank, filtered by stage
+    round.ts            Round creation, answering, scoring (ROUND_SIZE = 15)
+    random.ts           Seeded PRNG + shuffle, so rounds are reproducible
+    progress.ts         Round history plus per-stage and per-subject summaries
+    progressStorage.ts  Loads/saves that history, tolerating unreadable data
+    subscription.ts     Plans, the daily free allowance, the access check
+    subscriptionStorage.ts  Loads/saves the subscription and the allowance
+    storage.ts          Shared, failure-tolerant JSON read/write over Web Storage
+  photo/                Photo handling shared by both camera features
+    photo.ts            Format and size checks, reading a chosen file
+    photoClient.ts      Posting a photo to a vision endpoint
+  marking/              AI homework photo-marking (browser half)
+    marking.ts          Types, the JSON schema, result validation
+    markingClient.ts    Posts the photo to the marking endpoint
+    MarkingView.tsx     Photo picker and marked-up results
+  solving/              Scan and solve (browser half)
+    solving.ts          Types, the JSON schema, validation
+    solvingClient.ts    Posts the photo to the solving endpoint
+    SolveView.tsx       Photo picker and step-by-step walkthrough
+  data/                 Static content (questions.ts, stages.ts)
+  errors.ts             LearnerError / learnerMessage — the learner-safe error type
+  types.ts              Shared domain types (StageId, Stage, Question, …)
+  test/setup.ts         Vitest setup (jest-dom matchers)
+server/                 The vision endpoints — hold the API key, never shipped to the browser
 ```
 
-Commands: `npm run dev` (Vite), `npm test` (Vitest), `npm run typecheck`
-(`tsc --noEmit`), `npm run build`, `npm run test:coverage`.
+Unit tests live **beside** the code as `<name>.test.ts(x)`, not in a separate tree.
 
-Logic lives in `src/game`, `src/marking`, `src/photo` as plain modules with
-unit tests alongside; components stay presentational. Keep that split, and
-keep this file accurate when the structure changes.
-## Product vision
+## Architecture
 
-**Education-academy** ("A service for students and learners") is a cat-themed
-learning game for UK learners, hosted by **Mochi the ginger cat**. The intended
-scope, from `README.md`:
+### The split that matters
 
-- **Four learning stages** aligned to the UK system:
-  - Key Stage 1
-  - Key Stage 2
-  - Key Stage 3
-  - Higher Education
-- **15-question puzzle rounds** as the core gameplay loop.
-- **AI homework photo-marking** — learners photograph homework and it is marked.
-- **Scan-and-solve helper** — scan a problem and get a worked solution.
-- **Subscription paywall** — gated premium access.
-- **Parent/teacher dashboard** with progress tracking.
+Logic lives in `src/game`, `src/marking`, `src/photo` and `src/solving` as plain
+modules with unit tests alongside; components stay presentational and `App.tsx`
+wires them together. **Keep that split** — game rules must not import React, and
+components should not grow rules of their own.
 
-Treat this list as the product backlog. When building a feature, map it back to
-one of these areas and keep the cat/Mochi theming consistent in user-facing copy.
+### The vision endpoints (`server/`)
 
-## When you add code
+The camera features call Claude, which needs an API key, and **the key must never
+reach the browser**. So the browser posts the photo to an endpoint and `server/` is
+what runs behind it:
 
-There are no enforced conventions yet, so establish sensible ones and record them
-here. Suggested baseline (adjust as the project takes shape):
+```
+browser  ──POST /api/mark──▶  handleMarkRequest   ──▶  createClaudeMarker  ──┐
+(no key)  ──POST /api/solve─▶  handleSolveRequest  ──▶  createClaudeSolver ──┴─▶ Claude API
+                               (validate the body)      (hold ANTHROPIC_API_KEY)
+```
 
-1. **Pick and document the stack.** When you introduce a language/framework, add
-   a section below describing it, the directory layout, and how to run it.
-2. **Add the standard scripts** a contributor expects — install, run/dev, build,
-   test, lint/format — and document the exact commands here once they exist.
-3. **Keep secrets out of the repo.** The product involves subscriptions/payments
-   and AI services; never commit API keys or credentials. Use environment
-   variables and provide a committed `.env.example` (without real values).
-4. **Mind learner data.** This app targets children and schools (UK). Be
-   conservative with personal data, and flag anything with privacy/safeguarding
-   implications rather than guessing.
-5. **Write tests alongside features** and wire them into CI before the codebase
-   grows large enough that retrofitting is painful.
+| File | What it is |
+| --- | --- |
+| `claudeVision.ts` | Shared request building and reply parsing for both features |
+| `claudeMarker.ts` / `claudeSolver.ts` | The per-feature prompt and schema |
+| `photoRequest.ts` | Body validation, rate limiting and failure handling shared by both handlers |
+| `rateLimit.ts` | The sliding-window limiter |
+| `photoLimits.ts` | The per-client and overall limits both endpoints share |
+| `clientKey.ts` | Works out who to count a request against |
+| `markHandler.ts` / `solveHandler.ts` | Transport-agnostic: parsed body in, `{ status, body }` out |
+| `markingApiPlugin.ts` | Mounts both handlers on the **Vite dev server** |
 
-Update the placeholders below as soon as the corresponding pieces exist.
+There is **no Express server**. In development the handlers are mounted by a Vite
+plugin (`markingApi()` in `vite.config.ts`); in production you mount the same
+transport-agnostic handlers on whatever you deploy (Node server, serverless
+function, edge worker with a Node-compatible runtime). `server/README.md` documents
+the full request/response contract, the status codes, the rate-limit defaults and a
+deployment snippet — read it before changing anything under `server/`.
 
-### Tech stack
-_Not yet chosen. Document language, framework, and major dependencies here._
+Without `ANTHROPIC_API_KEY` the endpoints answer **501** and the app says the
+feature isn't switched on. Everything else still works, and the test suite never
+needs a key.
 
-### Project structure
-_Not yet established. Document the directory layout here once code is added._
+Model: `claude-opus-5`, one request per photo, `effort: "medium"`, capped by
+`VISION_MAX_TOKENS`. Both replies are constrained with structured outputs
+(`output_config.format`) against the schemas in `src/marking/marking.ts` and
+`src/solving/solving.ts`, so the browser receives JSON in a known shape rather than
+prose to parse.
 
-### Development commands
-_None yet. Once tooling exists, list the exact commands, e.g.:_
-- Install: _TBD_
-- Run / dev server: _TBD_
-- Build: _TBD_
-- Test: _TBD_
-- Lint / format: _TBD_
+### Rate limiting
+
+Every photo is a paid API call, so both endpoints are limited **before** any work is
+done. Defaults: 20 photos per client per hour (`PHOTO_RATE_LIMIT_PER_CLIENT`) and
+120 overall per hour (`PHOTO_RATE_LIMIT_TOTAL`). Create the limiters **once, at
+startup** — building them per request gives every request a fresh allowance, which
+is the same as having no limit. The overall limit is the one that actually caps
+spend; treat the per-client limit as politeness. Counts are per process and in
+memory, so they reset on restart and don't add up across instances.
+
+## Conventions
+
+- **TypeScript everywhere, strict.** `npm run typecheck` (and `npm run build`) must
+  pass; `tsc --noEmit` runs before every build.
+- **Test beside the code.** A new module in `game/`, `marking/`, `photo/` or
+  `solving/` gets a `<name>.test.ts` next to it in the same change.
+- **Errors reaching a learner go through `LearnerError`/`learnerMessage`**
+  (`src/errors.ts`). Anything else is replaced with a general message, so nothing
+  about the API, the key or the transport leaks into the UI. `claudeMarker.test.ts`
+  and `claudeSolver.test.ts` pin that behaviour — don't loosen it.
+- **Storage is failure-tolerant.** Everything persisted goes through
+  `src/game/storage.ts`, which takes a `WebStorageLike` (easy to fake in tests) and
+  tolerates blocked or corrupt storage rather than throwing.
+- **An unreadable photo is not an error.** `/api/solve` answers 200 with an empty
+  `problem` and no steps; `/api/mark` with an empty `items` list. The model is told
+  to do that rather than guess, and the UI says so.
+- **Keep secrets out of the repo.** Never commit API keys. `ANTHROPIC_API_KEY` is
+  read by `server/` only; there is no `VITE_`-prefixed secret. `VITE_MARKING_ENDPOINT`
+  and `VITE_SOLVE_ENDPOINT` (both public) point the browser at the endpoints when
+  they aren't served from `/api/mark` and `/api/solve` on the same origin. Keep
+  `.env.example` current.
+- **Mind learner data.** This app targets children and schools (UK). Be conservative
+  with personal data, and flag anything with privacy/safeguarding implications rather
+  than guessing.
+- **Keep the cat/Mochi theming consistent** in user-facing copy.
+
+## Coverage
+
+`vite.config.ts` holds the Vitest config (there is no separate `vitest.config.ts`).
+Coverage includes `src/**/*.{ts,tsx}` and `server/**/*.ts`, excluding `src/main.tsx`
+and `src/test/**`. The thresholds are **floors set just under current coverage**, so
+a regression fails the run: statements 93, branches 90, functions 95, lines 93.
+Raise them as coverage grows; don't lower them to make a change pass.
+
+Note the `include` is scoped to source extensions on purpose — a bare `src/**` also
+matches `styles.css` and `server/README.md`, which the coverage provider then fails
+to parse as JS.
+
+## CI
+
+`.github/workflows/ci.yml` runs on push to `main` and on pull requests, against a
+Node **22 and 24** matrix: `npm ci` → `npm run typecheck` → `npm run test:coverage`
+(enforcing the floors above) → `npx vite build`. Superseded runs on the same branch
+are cancelled. Match it locally before pushing.
+
+## Product backlog
+
+From `README.md` — treat this as the scope to map new work onto:
+
+- Four learning stages (KS1, KS2, KS3, Higher Education) ✅
+- 15-question puzzle rounds as the core loop ✅
+- AI homework photo-marking ✅
+- Scan-and-solve helper ✅
+- Subscription paywall ✅
+- Parent/teacher dashboard with progress tracking — partially built; `App.tsx` shows
+  stage/subject summaries, but there is no separate parent view yet.
 
 ## Git workflow
 
 - The default branch is `main`.
-- Do work on feature branches, not directly on `main`.
+- Do work on feature branches, not directly on `main`; push with
+  `git push -u origin <branch>` and retry network failures with exponential backoff.
 - Use clear, descriptive commit messages.
-- Open a pull request for review rather than pushing to `main` directly.
+- **Do not open a pull request unless explicitly asked.**
+- If a designated branch's PR has already merged, restart the branch from the latest
+  `main` for follow-up work rather than stacking onto merged history.
 
 ## Keeping this file current
 
-This document is only useful if it reflects reality. Whenever you add a stack,
-tooling, directory structure, or convention, update the relevant section above
-in the same change — replace the `TBD` / "not yet" placeholders with the actual
-details.
+This document is only useful if it reflects reality. Whenever you change the stack,
+tooling, directory structure or a convention, update the relevant section above in
+the same change.

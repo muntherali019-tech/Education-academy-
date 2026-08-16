@@ -21,6 +21,8 @@ browser  ──POST /api/mark──▶  handleMarkRequest   ──▶  createCla
 | `clientKey.ts` | Works out who to count a request against |
 | `markHandler.ts` / `solveHandler.ts` | Transport-agnostic: parsed body in, `{ status, body }` out |
 | `markingApiPlugin.ts` | Mounts both handlers on the Vite dev server |
+| `httpApi.ts` | Mounts both handlers on a plain `node:http` server (production) |
+| `serve.ts` | The production process: serves `dist/` and the API. Bootstrap only |
 
 ## Running it in development
 
@@ -34,8 +36,25 @@ switched on — everything else still works, and the test suite never needs a ke
 
 ## Deploying it
 
-Mount the handlers on whatever you deploy (a Node server, a serverless function,
-an edge worker with a Node-compatible runtime):
+**There is a production server in the box.** `serve.ts` serves the built app and
+both endpoints from one `node:http` process — no framework, no extra dependency:
+
+```bash
+npm run build && npm run build:server && npm start
+```
+
+`render.yaml` in the repo root deploys exactly that as a single Render service.
+Set `ANTHROPIC_API_KEY` in the dashboard to switch the camera features on.
+
+`TRUST_PROXY=1` tells it to take the client address from `x-forwarded-for`. Set it
+only behind a proxy you control that overwrites that header (Render does).
+Anywhere a client can reach the process directly, leaving it off is what stops a
+caller spoofing the header for a fresh allowance per request.
+
+### Mounting them somewhere else
+
+To run the endpoints on a serverless function or an edge worker instead, mount the
+same transport-agnostic handlers there:
 
 ```ts
 import { handleSolveRequest } from "./solveHandler";

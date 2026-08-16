@@ -1,0 +1,32 @@
+# Render Blueprint — one service serving the built app and the vision endpoints.
+# https://render.com/docs/blueprint-spec
+#
+# `npm run build` produces the browser bundle in dist/, and `npm run build:server`
+# bundles server/serve.ts into dist-server/. The service runs the latter, which
+# serves dist/ statically and mounts /api/mark and /api/solve.
+services:
+  - type: web
+    name: education-academy
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build && npm run build:server
+    startCommand: node dist-server/serve.js
+    envVars:
+      - key: NODE_VERSION
+        value: "22.22.2"
+      # Render terminates TLS at its proxy and overwrites x-forwarded-for, so
+      # per-client rate limiting can trust it here. Leave this unset anywhere a
+      # client can reach the process directly — a caller could then spoof the
+      # header and mint a fresh allowance per request.
+      - key: TRUST_PROXY
+        value: "1"
+      # Required for the camera features. Without it the app still runs and the
+      # two endpoints answer 501, so a keyless deploy is fully usable otherwise.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Photo budget per hour. The overall limit is the one that caps spend —
+      # set it to a number you are willing to pay for every hour.
+      # - key: PHOTO_RATE_LIMIT_TOTAL
+      #   value: "120"
+      # - key: PHOTO_RATE_LIMIT_PER_CLIENT
+      #   value: "20"

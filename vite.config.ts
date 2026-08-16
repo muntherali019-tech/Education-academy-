@@ -13,9 +13,11 @@ export default defineConfig({
       // Scoped to source extensions: a bare "src/**" also matches styles.css
       // and server/README.md, which the provider then fails to parse as JS.
       include: ["src/**/*.{ts,tsx}", "server/**/*.ts"],
-      // main.tsx is the DOM bootstrap and setup.ts is test scaffolding —
-      // neither has logic worth measuring.
-      exclude: ["src/main.tsx", "src/test/**"],
+      // main.tsx is the DOM bootstrap, serve.ts the process bootstrap, and
+      // setup.ts is test scaffolding — none has logic worth measuring. The
+      // request handling serve.ts delegates to lives in httpApi.ts, which is
+      // covered; keep it that way rather than growing logic in serve.ts.
+      exclude: ["src/main.tsx", "server/serve.ts", "src/test/**"],
       reporter: ["text", "json-summary"],
       // Floors, not targets: set just under current coverage so a regression
       // fails CI while leaving room for ordinary churn. Raise as coverage grows.

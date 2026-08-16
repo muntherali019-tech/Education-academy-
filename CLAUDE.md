@@ -34,8 +34,10 @@ npm test               # vitest run — the whole suite (22 files, ~246 tests)
 npm run test:watch     # vitest in watch mode
 npm run typecheck      # tsc --noEmit
 npm run test:coverage  # vitest run --coverage (enforces the floors in vite.config.ts)
-npm run build          # tsc --noEmit && vite build
-npm run preview        # serve the production build
+npm run build          # tsc --noEmit && vite build          -> dist/
+npm run build:server   # bundle server/serve.ts              -> dist-server/
+npm start              # node dist-server/serve.js (what the deploy runs)
+npm run preview        # Vite's own preview of dist/ (no API — use npm start for that)
 ```
 
 Run one file or one test: `npx vitest run src/game/round.test.ts`,
@@ -46,12 +48,9 @@ Run one file or one test: `npx vitest run src/game/round.test.ts`,
 ```
 src/
   main.tsx              React entry point
-  App.tsx               App shell: stage picker, round UI, dashboard, plans, camera features
-  components/           Presentational screens used by App.tsx
-    StageSelect.tsx     Stage picker
-    Quiz.tsx            The round UI
-    Results.tsx         End-of-round summary
-    ComingSoon.tsx      Placeholder for unbuilt areas
+  App.tsx               App shell: stage picker, round UI, dashboard, plans, camera features.
+                        Renders the stage picker, quiz and results inline — there is no
+                        separate components/ directory.
   game/                 Core rules — framework-free, no React imports, fully unit tested
     stages.ts           The four UK stages and age-to-stage mapping
     questions.ts        Question bank, filtered by stage
@@ -73,12 +72,15 @@ src/
     solving.ts          Types, the JSON schema, validation
     solvingClient.ts    Posts the photo to the solving endpoint
     SolveView.tsx       Photo picker and step-by-step walkthrough
-  data/                 Static content (questions.ts, stages.ts)
   errors.ts             LearnerError / learnerMessage — the learner-safe error type
-  types.ts              Shared domain types (StageId, Stage, Question, …)
   test/setup.ts         Vitest setup (jest-dom matchers)
-server/                 The vision endpoints — hold the API key, never shipped to the browser
+server/                 The vision endpoints + the production server (hold the API
+                        key, never shipped to the browser)
+render.yaml             One-service Render blueprint — the deploy path
 ```
+
+Domain types live with the code that owns them (`game/stages.ts`, `game/questions.ts`,
+`marking/marking.ts`, `solving/solving.ts`) rather than in a shared `types.ts`.
 
 Unit tests live **beside** the code as `<name>.test.ts(x)`, not in a separate tree.
 
@@ -113,13 +115,23 @@ browser  ──POST /api/mark──▶  handleMarkRequest   ──▶  createCla
 | `clientKey.ts` | Works out who to count a request against |
 | `markHandler.ts` / `solveHandler.ts` | Transport-agnostic: parsed body in, `{ status, body }` out |
 | `markingApiPlugin.ts` | Mounts both handlers on the **Vite dev server** |
+| `httpApi.ts` | Mounts both handlers on a plain `node:http` server (production) |
+| `serve.ts` | The production process: static files + the API. Bootstrap only |
 
-There is **no Express server**. In development the handlers are mounted by a Vite
-plugin (`markingApi()` in `vite.config.ts`); in production you mount the same
-transport-agnostic handlers on whatever you deploy (Node server, serverless
-function, edge worker with a Node-compatible runtime). `server/README.md` documents
-the full request/response contract, the status codes, the rate-limit defaults and a
-deployment snippet — read it before changing anything under `server/`.
+There is **no Express server** and no framework — the two transports are a Vite
+plugin in development and `node:http` in production, sharing the same handlers.
+`server/README.md` documents the full request/response contract, the status codes,
+the rate-limit defaults and how to mount the handlers somewhere else (a serverless
+function, an edge worker) — read it before changing anything under `server/`.
+
+**The two transports must stay in step.** `markingApiPlugin.ts` and `httpApi.ts`
+both do method checks, the 501-without-a-key check, body reading with an 8 MB cap,
+JSON parsing and `clientKey` derivation before delegating. A change to that
+sequence belongs in both, or dev and production drift apart.
+
+**Keep `serve.ts` a bootstrap.** It is the one file excluded from coverage (like
+`src/main.tsx`), so logic added there is untested by construction. Request handling
+belongs in `httpApi.ts`, which is covered.
 
 Without `ANTHROPIC_API_KEY` the endpoints answer **501** and the app says the
 feature isn't switched on. Everything else still works, and the test suite never
@@ -179,12 +191,31 @@ Note the `include` is scoped to source extensions on purpose — a bare `src/**`
 matches `styles.css` and `server/README.md`, which the coverage provider then fails
 to parse as JS.
 
+## Deploying
+
+`render.yaml` is a one-service Render blueprint: it builds the browser bundle and
+the server bundle, then runs `node dist-server/serve.js`, which serves `dist/` and
+mounts `/api/mark` and `/api/solve` on the same origin. Set `ANTHROPIC_API_KEY` in
+the dashboard to switch the camera features on — without it the app still runs and
+those two endpoints answer 501.
+
+`TRUST_PROXY=1` is set in the blueprint because Render terminates TLS and overwrites
+`x-forwarded-for`. **Leave it unset anywhere a client can reach the process
+directly**, or a caller can spoof the header and mint a fresh rate allowance per
+request.
+
+To host the API somewhere else instead, mount `handleMarkRequest`/`handleSolveRequest`
+there (see `server/README.md`) and point the browser at it with
+`VITE_MARKING_ENDPOINT` / `VITE_SOLVE_ENDPOINT`.
+
 ## CI
 
 `.github/workflows/ci.yml` runs on push to `main` and on pull requests, against a
 Node **22 and 24** matrix: `npm ci` → `npm run typecheck` → `npm run test:coverage`
-(enforcing the floors above) → `npx vite build`. Superseded runs on the same branch
-are cancelled. Match it locally before pushing.
+(enforcing the floors above) → `npx vite build` → `npm run build:server` → a smoke
+test that boots the production server and checks the app shell, a 501 from
+`/api/mark` and a JSON 404 from an unknown `/api/` path. Superseded runs on the same
+branch are cancelled. Match it locally before pushing.
 
 ## Product backlog
 

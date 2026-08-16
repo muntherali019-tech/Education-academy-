@@ -38,3 +38,24 @@ jobs:
       - run: npm run test:coverage
 
       - run: npx vite build
+
+      # The deploy runs this bundle, so a break here must fail CI rather than
+      # the release.
+      - run: npm run build:server
+
+      # Boot what Render actually starts and prove it serves the app and both
+      # endpoints. No key is set, so the vision routes answer 501 by design.
+      - name: Smoke-test the production server
+        run: |
+          PORT=4173 node dist-server/serve.js &
+          SRV=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:4173/ > /dev/null; then echo "app OK"; break; fi
+            sleep 0.5
+          done
+          curl -fsS http://localhost:4173/ > /dev/null && echo "shell OK"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4173/api/mark \
+            -H 'content-type: application/json' -d '{}')" = "501" && echo "mark 501 OK"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4173/api/nope)" = "404" \
+            && echo "api 404 OK"
+          kill $SRV 2>/dev/null || true
